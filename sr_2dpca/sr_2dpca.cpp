@@ -13,6 +13,7 @@
 #include "defines.h"
 #include "logic\capture\CamCaptureLib.h"
 #include "logic\capture\CamCaptureModern.h"
+#include "logic\capture\VideoCapture.h"
 
 boost::mutex io_mutex;
 
@@ -148,10 +149,8 @@ int main(int argc, char* argv[])
 	} break;
 
 	case modern_capture: {
-		int32_t camera_num = boost::lexical_cast<int32_t>(parameters_value.at(1));
-
 		CamCaptureModern *cam_capture_modern = new CamCaptureModern(boost::lexical_cast<int32_t>(parameters_value.at(1)),
-																 snapshot_delay);
+																    snapshot_delay);
 		if (cam_capture_modern) {
 			cam_capture_modern->run_capture();
 			delete cam_capture_modern;
@@ -159,9 +158,12 @@ int main(int argc, char* argv[])
 	} break;
 
 	case video_import: {
-		std::string path_to_video = parameters_value.at(1);
+		VideoCapture *video_capture = new VideoCapture(parameters_value.at(1), snapshot_delay);
+		if (video_capture) {
+			video_capture->run_capture();
+			delete video_capture;
+		}
 	} break;
-
 
 	default:
 		std::cout << std::endl << "Error input capture type" << std::endl;

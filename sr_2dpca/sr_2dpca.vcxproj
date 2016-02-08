@@ -153,12 +153,14 @@
     <ClCompile Include="logic\capture\CamCaptureLib.cpp" />
     <ClCompile Include="logic\capture\videoInput.cpp" />
     <ClCompile Include="sr_2dpca.cpp" />
+    <ClCompile Include="logic\capture\VideoCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="logic\capture\CamCaptureModern.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="logic\capture\CamCaptureLib.h" />
     <ClInclude Include="logic\capture\videoInput.h" />
+    <ClInclude Include="logic\capture\VideoCapture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
