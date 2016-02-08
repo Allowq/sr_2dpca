@@ -3,12 +3,18 @@
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <iostream>
-#include <stdint.h>
 #include <vector>
+#include <stdint.h>
+#include <signal.h>
 
 #include "defines.h"
+#include "logic\capture\CamCaptureLib.h"
+#include "logic\capture\CamCaptureModern.h"
+
+boost::mutex io_mutex;
 
 void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parameters_value) {
 	namespace po = boost::program_options;
@@ -17,10 +23,10 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 
 	desc.add_options()
 		("help,h", "Print help message")
-		("c_c_l,l", "Capture videos with the camera (by library)")
-		("c_c_m,m", "Capture videos with the camera (modern)")
+		("c_c_l,l", po::value<int32_t>(), "Capture videos with the camera (by library)")
+		("c_c_m,m", po::value<int32_t>(), "Capture videos with the camera (modern)")
 		("c_i_v,i", po::value<std::string>(), "Input video from file")
-		("c_f_t,t", po::value<int>()->required(), "Capture frames with delay (ms)");
+		("c_f_t,t", po::value<int32_t>()->required(), "Capture frames with delay (ms)");
 
 	po::variables_map vm;
 
@@ -73,11 +79,11 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 		switch (capture_type)
 		{
 		case input_library:
-			parameters_value->push_back(std::to_string(vm["c_c_l"].as<int>()));
+			parameters_value->push_back(std::to_string(vm["c_c_l"].as<int32_t>()));
 			break;
 
 		case modern_capture:
-			parameters_value->push_back(std::to_string(vm["c_c_m"].as<int>()));
+			parameters_value->push_back(std::to_string(vm["c_c_m"].as<int32_t>()));
 			break;
 
 		case video_import:
@@ -88,7 +94,7 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			throw;
 		}
 
-		parameters_value->push_back(std::to_string(vm["c_f_t"].as<int>()));
+		parameters_value->push_back(std::to_string(vm["c_f_t"].as<int32_t>()));
 	}
 	catch (...) {
 		std::cout << std::endl << "Error input parameters" << std::endl;
@@ -108,11 +114,60 @@ void print_input_parameters(std::vector<std::string> *vec_parameters) {
 	getchar();
 }
 
+void signalHandler(int signal) {
+	{
+		boost::mutex::scoped_lock lock(io_mutex);
+		std::cout << "Signal " << signal << " was send" << std::endl;
+	}
+
+	exit(signal);
+}
+
 int main(int argc, char* argv[])
 {
 	std::vector<std::string> parameters_value;
 	parsing_parameters(argc, argv, &parameters_value);
-	print_input_parameters(&parameters_value);
+
+	signal(SIGINT, signalHandler);
+	signal(SIGTERM, signalHandler);
+
+	// print_input_parameters(&parameters_value);
+
+	CAPTURE_TYPE_ENUM capture_type = CAPTURE_TYPE_ENUM(boost::lexical_cast<int32_t>(parameters_value.front()));
+	int32_t snapshot_delay = boost::lexical_cast<int32_t>(parameters_value.at(2));
+
+	switch (capture_type)
+	{
+	case input_library: {
+		CamCaptureLib *cam_capture_lib = new CamCaptureLib(boost::lexical_cast<int32_t>(parameters_value.at(1)),
+														   snapshot_delay);
+		if (cam_capture_lib) {
+			cam_capture_lib->run_capture();
+			delete cam_capture_lib;
+		}
+	} break;
+
+	case modern_capture: {
+		int32_t camera_num = boost::lexical_cast<int32_t>(parameters_value.at(1));
+
+		CamCaptureModern *cam_capture_modern = new CamCaptureModern(boost::lexical_cast<int32_t>(parameters_value.at(1)),
+																 snapshot_delay);
+		if (cam_capture_modern) {
+			cam_capture_modern->run_capture();
+			delete cam_capture_modern;
+		}
+	} break;
+
+	case video_import: {
+		std::string path_to_video = parameters_value.at(1);
+	} break;
+
+
+	default:
+		std::cout << std::endl << "Error input capture type" << std::endl;
+		std::cout << "For print help message use -h[--help] key" << std::endl;
+		exit(4);
+	}
 
     return 0;
 }
