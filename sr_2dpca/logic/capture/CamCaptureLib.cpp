@@ -6,7 +6,7 @@ CamCaptureLib::CamCaptureLib(int32_t _camera_index,
 							 int32_t height_capture, 
 							 int32_t width_capture, 
 							 bool show_camera_settings)
-	: camera_index(0), snapshot_delay(_snapshot_delay), frame(nullptr), window_name("Capture")
+	: camera_index(0), snapshot_delay(_snapshot_delay), frame(nullptr), window_name("Capture"), degrade_filter(nullptr)
 {
 	// получение списка доступных видеоустройств, возвращаетс§ число устройств
 	int32_t numDevices = video_input.listDevices();
@@ -23,11 +23,20 @@ CamCaptureLib::CamCaptureLib(int32_t _camera_index,
 	// показать окошко настроек камеры
 	if (show_camera_settings)
 		video_input.showSettingsWindow(camera_index); 
+
+	degrade_filter = new NS_DegradeFilter::DegradeFilter();
 }
 
 void CamCaptureLib::run_capture() {
 	// уникальный номер нажатой клавиши
 	char ch = 0;
+	// им€ сохран€емого скриншота
+	char snapshot_name[512];
+	// пор€дковый номер скришота, который мы сохран€ем
+	int32_t index = 0;
+	// таймер сн€ти€ скриншота
+	boost::timer snapshot_timer;
+
 	// создаЄм картинку нужного размера
 	frame = cvCreateImage(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), IPL_DEPTH_8U, 3);
 	cvNamedWindow(window_name.c_str(), CV_WINDOW_AUTOSIZE);
@@ -36,10 +45,17 @@ void CamCaptureLib::run_capture() {
 		while (true) {
 			if (video_input.isFrameNew(camera_index)) {
 				// первый параметр - индекс видеоустройсва
-				// второй - указатель на буфер дл§ сохранени§ данных
-				// третий - флаг, определ§ющий мен§ть ли местами B и R -составл§ющий
-				// четв™ртый - флаг, определ§ющий поворачивать картинку или нет
+				// второй - указатель на буфер дл€ сохранени§ данных
+				// третий - флаг, определ§ющий мен€ть ли местами B и R -составл€ющий
+				// четвЄртый - флаг, определ€ющий поворачивать картинку или нет
 				video_input.getPixels(camera_index, (unsigned char *)frame->imageData, false, true); // получение пикселей в BGR
+
+				if (snapshot_timer.elapsed() > (snapshot_delay / 1000.0)) {
+					snapshot_timer.restart();
+					sprintf(snapshot_name, ".//snapshots//Image%d.jpg", index);
+					cvSaveImage(snapshot_name, frame);
+					index++;
+				}
 
 																					   //
 																					   // здесь уже можно работать с картинкой
@@ -62,6 +78,7 @@ void CamCaptureLib::run_capture() {
 		stop_capture();
 		throw boost::thread_interrupted();
 	}
+	getchar();
 }
 
 void CamCaptureLib::stop_capture() {
@@ -73,5 +90,8 @@ void CamCaptureLib::stop_capture() {
 }
 
 CamCaptureLib::~CamCaptureLib() {
-
+	if (frame)
+		cvReleaseImage(&frame);
+	if (degrade_filter)
+		delete degrade_filter;
 }

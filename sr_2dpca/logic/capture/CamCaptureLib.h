@@ -3,14 +3,16 @@
 
 #pragma once
 
-#include <opencv\cv.h>
-#include <opencv\highgui.h>
+#include <opencv2\opencv.hpp>
+#include <opencv2\highgui.hpp>
 
 #include <boost\thread\thread.hpp>
+#include <boost\timer.hpp>
 
 #include <stdint.h>
 
 #include "videoInput.h"
+#include "..\filters\DegradeFilter.h"
 
 class CamCaptureLib {
 private:
@@ -24,6 +26,8 @@ private:
 	videoInput video_input;
 	// уникальное имя окна, в котором будет отображаться захват изображения с камеры
 	std::string window_name;
+
+	NS_DegradeFilter::DegradeFilter *degrade_filter;
 
 public:
 	explicit CamCaptureLib(int32_t _camera_index, 
