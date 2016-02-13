@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 #include "videoInput.h"
+#include "..\super_resolution\SuperResolution.h"
 #include "..\filters\DegradeFilter.h"
 
 class CamCaptureLib {

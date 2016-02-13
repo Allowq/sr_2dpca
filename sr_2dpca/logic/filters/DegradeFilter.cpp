@@ -2,8 +2,7 @@
 
 namespace NS_DegradeFilter {
 
-	DegradeFilter::DegradeFilter() : image_temp(nullptr)
-	{
+	DegradeFilter::DegradeFilter() : image_temp(nullptr) {
 
 	}
 
