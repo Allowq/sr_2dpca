@@ -29,6 +29,7 @@ private:
 	std::string window_name;
 
 	NS_DegradeFilter::DegradeFilter *degrade_filter;
+	NS_SuperResolution::SuperResolution *btv_sr;
 
 public:
 	explicit CamCaptureLib(int32_t _camera_index, 

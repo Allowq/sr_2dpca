@@ -7,9 +7,9 @@ namespace NS_SuperResolution {
 	SuperResolution::SuperResolution() {
 	}
 
-	void SuperResolution::bilateral_total_variation_sr(std::vector<cv::Mat> *degrade_images,
+	void SuperResolution::bilateral_total_variation_sr(std::vector<cv::Mat> &degrade_images,
 													   cv::Mat& dest,
-													   std::vector<cv::SparseMat> *DHF,
+													   std::vector<cv::SparseMat> &DHF,
 													   const int32_t num_of_view,
 													   int32_t iteration,
 													   float beta,
@@ -31,8 +31,8 @@ namespace NS_SuperResolution {
 
 		for (int32_t n = 0; n < num_of_view; n++)
 		{
-			degrade_images->at(n).reshape(3, degrade_images->at(0).cols * degrade_images->at(0).rows).convertTo(svec[n], CV_32FC3);
-			degrade_images->at(n).reshape(3, degrade_images->at(0).cols * degrade_images->at(0).rows).convertTo(svec2[n], CV_32FC3);
+			degrade_images[n].reshape(3, degrade_images[0].cols * degrade_images[0].rows).convertTo(svec[n], CV_32FC3);
+			degrade_images[n].reshape(3, degrade_images[0].cols * degrade_images[0].rows).convertTo(svec2[n], CV_32FC3);
 
 			dest_vec_temp[n] = dest_vec.clone();
 		}
@@ -55,10 +55,10 @@ namespace NS_SuperResolution {
 			for (int32_t n = 0; n < num_of_view; n++)
 			{
 				//degrade current estimated image
-				mul_sparseMat32f(DHF->at(n), dest_vec, svec2[n]);
+				mul_sparseMat32f(DHF[n], dest_vec, svec2[n]);
 
 				//compere input and degraded image
-				cv::Mat temp(degrade_images->at(0).cols * degrade_images->at(0).rows, 1, CV_32FC3);
+				cv::Mat temp(degrade_images[0].cols * degrade_images[0].rows, 1, CV_32FC3);
 				if (method == SR_DATA_L1)
 				{
 					subtract_sign(svec2[n], svec[n], temp);
@@ -70,7 +70,7 @@ namespace NS_SuperResolution {
 				}
 
 				//blur the subtructed vector with transposed matrix
-				mul_sparseMat32f(DHF->at(n), temp, dest_vec_temp[n], true);
+				mul_sparseMat32f(DHF[n], temp, dest_vec_temp[n], true);
 			}
 
 			//creep ideal image, beta is parameter of the creeping speed.
@@ -108,6 +108,13 @@ namespace NS_SuperResolution {
 		//re-convert  1D vecor structure to Mat image structure
 		dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
 		imwrite("sr.png", dest);
+
+		if (dest_vec_temp)
+			delete[] dest_vec_temp;
+		if (svec)
+			delete[] svec;
+		if (svec2)
+			delete[] svec2;
 	}
 
 	void SuperResolution::btv_regularization(cv::Mat &src_vec, cv::Size kernel, float alpha, cv::Mat &dst_vec, cv::Size size)

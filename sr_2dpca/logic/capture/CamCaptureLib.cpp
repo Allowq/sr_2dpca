@@ -6,7 +6,7 @@ CamCaptureLib::CamCaptureLib(int32_t _camera_index,
 							 int32_t height_capture, 
 							 int32_t width_capture, 
 							 bool show_camera_settings)
-	: camera_index(0), snapshot_delay(_snapshot_delay), frame(nullptr), window_name("Capture"), degrade_filter(nullptr)
+	: camera_index(0), snapshot_delay(_snapshot_delay), frame(nullptr), window_name("Capture"), degrade_filter(nullptr), btv_sr(nullptr)
 {
 	// получение списка доступных видеоустройств, возвращаетс§ число устройств
 	int32_t numDevices = video_input.listDevices();
@@ -25,6 +25,7 @@ CamCaptureLib::CamCaptureLib(int32_t _camera_index,
 		video_input.showSettingsWindow(camera_index); 
 
 	degrade_filter = new NS_DegradeFilter::DegradeFilter();
+	btv_sr = new NS_SuperResolution::SuperResolution();
 }
 
 void CamCaptureLib::run_capture() {
@@ -39,9 +40,15 @@ void CamCaptureLib::run_capture() {
 
 	// создаЄм картинку нужного размера
 	frame = cvCreateImage(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), IPL_DEPTH_8U, 3);
-	cvNamedWindow(window_name.c_str(), CV_WINDOW_AUTOSIZE);
+	
+	//cvNamedWindow(window_name.c_str(), CV_WINDOW_AUTOSIZE);
 
 	try {
+
+		std::vector<cv::Mat> degrade_images; degrade_images.resize(16);
+		std::vector<cv::SparseMat> DHF; DHF.resize(16);
+		cv::Mat dest = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
+
 		while (true) {
 			if (video_input.isFrameNew(camera_index)) {
 				// первый параметр - индекс видеоустройсва
@@ -50,10 +57,34 @@ void CamCaptureLib::run_capture() {
 				// четвЄртый - флаг, определ€ющий поворачивать картинку или нет
 				video_input.getPixels(camera_index, (unsigned char *)frame->imageData, false, true); // получение пикселей в BGR
 
+				/*
 				if (snapshot_timer.elapsed() > (snapshot_delay / 1000.0)) {
 					snapshot_timer.restart();
 					sprintf(snapshot_name, ".//snapshots//Image%d.jpg", index);
 					cvSaveImage(snapshot_name, frame);
+					index++;
+				}
+				*/
+
+				if ((index > 0) && (index % 16 == 0))
+				{
+					index = 0;
+					btv_sr->bilateral_total_variation_sr(degrade_images, 
+														 dest, 
+														 DHF, 
+														 16, 
+														 90, 
+														 1.3f, 
+														 0.03f, 
+														 0.7f, 
+														 cv::Size(7, 7), 
+														 NS_SuperResolution::SR_DATA_L1);
+					stop_capture();
+					break;
+				}
+				else {
+					degrade_images[index] = cv::cvarrToMat(frame);
+					DHF[index] = degrade_images[index];
 					index++;
 				}
 
@@ -63,7 +94,7 @@ void CamCaptureLib::run_capture() {
 																					   //
 
 																					   // показываем картинку
-				cvShowImage(window_name.c_str(), frame);
+				// cvShowImage(window_name.c_str(), frame);
 			}
 
 			ch = cvWaitKey(33);
@@ -78,7 +109,6 @@ void CamCaptureLib::run_capture() {
 		stop_capture();
 		throw boost::thread_interrupted();
 	}
-	getchar();
 }
 
 void CamCaptureLib::stop_capture() {
@@ -94,4 +124,6 @@ CamCaptureLib::~CamCaptureLib() {
 		cvReleaseImage(&frame);
 	if (degrade_filter)
 		delete degrade_filter;
+	if (btv_sr)
+		delete btv_sr;
 }

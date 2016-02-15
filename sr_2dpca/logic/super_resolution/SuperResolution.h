@@ -32,9 +32,9 @@ namespace NS_SuperResolution {
 		explicit SuperResolution();
 
 		// super_resolution_sparseMat32f
-		void bilateral_total_variation_sr(std::vector<cv::Mat> *degrade_images,
+		void bilateral_total_variation_sr(std::vector<cv::Mat> &degrade_images,
 										  cv::Mat& dest,
-										  std::vector<cv::SparseMat> *DHF,
+										  std::vector<cv::SparseMat> &DHF,
 										  const int32_t num_of_view, 
 										  int32_t iteration, 
 										  float beta, 
