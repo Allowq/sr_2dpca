@@ -66,7 +66,7 @@ namespace NS_SuperResolution {
 				else
 				{
 					subtract(svec2[n], svec[n], temp);
-					//temp = svec2[n]- svec[n]; //supported in OpenCV2.1
+					// temp = svec2[n]- svec[n]; //supported in OpenCV2.1
 				}
 
 				//blur the subtructed vector with transposed matrix
@@ -75,11 +75,11 @@ namespace NS_SuperResolution {
 
 			//creep ideal image, beta is parameter of the creeping speed.
 			//add transeposed difference vector. sum_float_OMP is parallelized function of following for loop
-			/*for(int n=0;n<numofview;n++)
+			for(int32_t n = 0; n < num_of_view; n++)
 			{
-			addWeighted(dstvec,1.0,dstvectemp[n],-beta,0.0,dstvec);
-			//dstvec -= (beta*dstvectemp[n]);//supported in OpenCV2.1
-			}*/
+				addWeighted(dest_vec, 1.0, dest_vec_temp[n], -beta, 0.0, dest_vec);
+				//dstvec -= (beta*dstvectemp[n]);//supported in OpenCV2.1
+			}
 
 			sum_float_OMP(dest_vec_temp, dest_vec, num_of_view, beta);
 
@@ -93,21 +93,25 @@ namespace NS_SuperResolution {
 				//dstvec -=lambda*beta*reg_vec; 
 			}
 
-			//show SR imtermediate process information. these processes does not be required at actural implimentation.
+			// show SR imtermediate process information. these processes does not be required at actural implimentation.
 			dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
 
-			char name[64];
-			sprintf(name, "iteration%04d.png", i);
+			//char name[64];
+			//sprintf(name, "iteration%04d.png", i);
 
-			imshow("SRimage", dest);
-			cv::waitKey(30);
-			imwrite(name, dest);
+			// imshow("SRimage", dest);
+			// cv::waitKey(30);
+			// imwrite(name, dest);
 			std::cout << "time/iteration" << (cv::getTickCount() - t)*1000.0 / cv::getTickFrequency() << "ms" << std::endl;
 		}
 
 		//re-convert  1D vecor structure to Mat image structure
 		dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
-		imwrite("sr.png", dest);
+
+		char sr_rezult[64];
+		sprintf(sr_rezult, "sr_lambda_eq_%03f.png", lambda);
+
+		imwrite(sr_rezult, dest);
 
 		if (dest_vec_temp)
 			delete[] dest_vec_temp;

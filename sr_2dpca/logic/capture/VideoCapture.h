@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "..\super_resolution\SuperResolution.h"
+
 class VideoCapture
 {
 private:
@@ -23,6 +25,8 @@ private:
 	int32_t snapshot_delay;
 	// уникальное имя окна, в котором будет отображаться захват изображения с камеры
 	std::string window_name;
+
+	NS_SuperResolution::SuperResolution *btv_sr;
 
 public:
 	explicit VideoCapture(std::string _path_to_video,

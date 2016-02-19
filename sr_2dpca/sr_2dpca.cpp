@@ -27,7 +27,7 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 		("c_c_l,l", po::value<int32_t>(), "Capture videos with the camera (by library)")
 		("c_c_m,m", po::value<int32_t>(), "Capture videos with the camera (modern)")
 		("c_i_v,i", po::value<std::string>(), "Input video from file")
-		("c_f_t,t", po::value<int32_t>()->required(), "Capture frames with delay (ms)");
+		("c_f_t,t", po::value<int32_t>(), "Capture frames with delay (ms)");
 
 	po::variables_map vm;
 
@@ -95,7 +95,8 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			throw;
 		}
 
-		parameters_value->push_back(std::to_string(vm["c_f_t"].as<int32_t>()));
+		if (vm.count("c_f_t"))
+			parameters_value->push_back(std::to_string(vm["c_f_t"].as<int32_t>()));
 	}
 	catch (...) {
 		std::cout << std::endl << "Error input parameters" << std::endl;
@@ -135,7 +136,9 @@ int main(int argc, char* argv[])
 	// print_input_parameters(&parameters_value);
 
 	CAPTURE_TYPE_ENUM capture_type = CAPTURE_TYPE_ENUM(boost::lexical_cast<int32_t>(parameters_value.front()));
-	int32_t snapshot_delay = boost::lexical_cast<int32_t>(parameters_value.at(2));
+	int32_t snapshot_delay = 0;
+	if (parameters_value.size() == 3)
+		snapshot_delay = boost::lexical_cast<int32_t>(parameters_value.at(2));
 
 	switch (capture_type)
 	{

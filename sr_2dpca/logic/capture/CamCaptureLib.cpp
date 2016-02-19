@@ -49,6 +49,14 @@ void CamCaptureLib::run_capture() {
 		std::vector<cv::SparseMat> DHF; DHF.resize(16);
 		cv::Mat dest = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
 
+		uint32_t image_count = 16;
+		uint32_t number_of_iteration = 60; // 180
+		float beta = 0.1f; // 1.3f
+		// коэффициент регул€ризации, увеличение ведЄт к сглаживанию сотрых краЄв (прежде чем удал€етс€ шум)
+		float lambda = 0.03f;
+		// скал€рный вес, примен€етс€ дл€ добавлени€ пространственно затухающего эффекта суммировани€ слагаемых регул€ризации
+		float alpha = 0.7f;
+
 		while (true) {
 			if (video_input.isFrameNew(camera_index)) {
 				// первый параметр - индекс видеоустройсва
@@ -66,21 +74,25 @@ void CamCaptureLib::run_capture() {
 				}
 				*/
 
-				if ((index > 0) && (index % 16 == 0))
+				if ((index > 0) && ((index % image_count) == 0))
 				{
 					index = 0;
 					btv_sr->bilateral_total_variation_sr(degrade_images, 
 														 dest, 
 														 DHF, 
-														 16, 
-														 90, 
-														 1.3f, 
-														 0.03f, 
-														 0.7f, 
+														 image_count,
+														 number_of_iteration,
+														 beta,
+														 lambda,
+														 alpha,
 														 cv::Size(7, 7), 
 														 NS_SuperResolution::SR_DATA_L1);
-					stop_capture();
-					break;
+
+					beta += 0.1f;
+					if (beta == 5.0f) {
+						stop_capture();
+						break;
+					}
 				}
 				else {
 					degrade_images[index] = cv::cvarrToMat(frame);
