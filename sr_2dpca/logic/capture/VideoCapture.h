@@ -7,6 +7,7 @@
 #include <opencv\highgui.h>
 
 #include <boost\thread\thread.hpp>
+#include <boost\timer.hpp>
 
 #include <stdint.h>
 
@@ -32,7 +33,7 @@ public:
 	explicit VideoCapture(std::string _path_to_video,
 						  int32_t _snapshot_delay = 500);
 
-	void run_capture();
+	int32_t run_capture();
 	void stop_capture();
 
 	virtual ~VideoCapture();

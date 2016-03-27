@@ -154,6 +154,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="logic\face_recongnition\EigenRecognize.cpp" />
     <ClCompile Include="logic\filters\DegradeFilter.cpp" />
     <ClCompile Include="logic\capture\CamCaptureModern.cpp" />
     <ClCompile Include="logic\capture\CamCaptureLib.cpp" />
@@ -163,6 +164,7 @@
     <ClCompile Include="logic\super_resolution\SuperResolution.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="logic\face_recongnition\EigenRecognize.h" />
     <ClInclude Include="logic\filters\DegradeFilter.h" />
     <ClInclude Include="logic\capture\CamCaptureModern.h" />
     <ClInclude Include="defines.h" />

@@ -16,14 +16,17 @@ namespace NS_SuperResolution {
 													   float lambda,
 													   float alpha,
 													   cv::Size reg_window,
-													   int32_t method)
+													   int32_t method,
+													   cv::Mat ideal,
+													   uint32_t test_step)
 	{
 		//(3) create initial image by simple linear interpolation
 		resize(degrade_images[0], dest, dest.size());
+		// std::cout << "PSNR" << get_PSNR(dest, ideal, 10) << "dB" << std::endl;
 
 		//(4)convert Mat image structure to 1D vecor structure
 		cv::Mat dest_vec;
-		dest.reshape(3, dest.cols*dest.rows).convertTo(dest_vec, CV_32FC3);
+		dest.reshape(3, dest.cols * dest.rows).convertTo(dest_vec, CV_32FC3);
 
 		cv::Mat *dest_vec_temp = new cv::Mat[num_of_view];
 		cv::Mat *svec = new cv::Mat[num_of_view];
@@ -38,7 +41,7 @@ namespace NS_SuperResolution {
 		}
 
 		//regularization vector
-		cv::Mat reg_vec = cv::Mat::zeros(dest.rows*dest.cols, 1, CV_32FC3);
+		cv::Mat reg_vec = cv::Mat::zeros(dest.rows * dest.cols, 1, CV_32FC3);
 
 		//(5)steepest descent method for L1 norm minimization
 		for (int32_t i = 0; i < iteration; i++)
@@ -75,11 +78,13 @@ namespace NS_SuperResolution {
 
 			//creep ideal image, beta is parameter of the creeping speed.
 			//add transeposed difference vector. sum_float_OMP is parallelized function of following for loop
+			/*
 			for(int32_t n = 0; n < num_of_view; n++)
 			{
 				addWeighted(dest_vec, 1.0, dest_vec_temp[n], -beta, 0.0, dest_vec);
 				//dstvec -= (beta*dstvectemp[n]);//supported in OpenCV2.1
 			}
+			*/
 
 			sum_float_OMP(dest_vec_temp, dest_vec, num_of_view, beta);
 
@@ -95,8 +100,12 @@ namespace NS_SuperResolution {
 
 			// show SR imtermediate process information. these processes does not be required at actural implimentation.
 			dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
+			std::cout << "PSNR" << get_PSNR(dest, ideal, 10) << "dB" << std::endl;
 
 			//char name[64];
+			//sprintf(name, "%03d: %.1f dB", i, get_PSNR(dest, ideal, 10));
+			//putText(dest, name, cv::Point(15, 50), cv::FONT_HERSHEY_DUPLEX, 1.5, CV_RGB(255, 255, 255), 2);
+
 			//sprintf(name, "iteration%04d.png", i);
 
 			// imshow("SRimage", dest);
@@ -109,7 +118,7 @@ namespace NS_SuperResolution {
 		dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
 
 		char sr_rezult[64];
-		sprintf(sr_rezult, "sr_lambda_eq_%03f.png", lambda);
+		sprintf(sr_rezult, "sr_rezult_%03d.png", test_step);
 
 		imwrite(sr_rezult, dest);
 

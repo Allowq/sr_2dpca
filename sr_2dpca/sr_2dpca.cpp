@@ -27,7 +27,8 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 		("c_c_l,l", po::value<int32_t>(), "Capture videos with the camera (by library)")
 		("c_c_m,m", po::value<int32_t>(), "Capture videos with the camera (modern)")
 		("c_i_v,i", po::value<std::string>(), "Input video from file")
-		("c_f_t,t", po::value<int32_t>(), "Capture frames with delay (ms)");
+		("c_f_t,t", po::value<int32_t>(), "Capture frames with delay (ms)")
+		("t_e_f_r,e", po::value<std::string>(), "Test eigen face recognizer");
 
 	po::variables_map vm;
 
@@ -44,6 +45,7 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			std::cout << "\t-m[--c_c_m]" << "\t" << "Capture videos with the camera (modern)" << std::endl;
 			std::cout << "\t-i[--c_i_v]" << "\t" << "Input video from file" << std::endl;
 			std::cout << "\t-t[--c_f_t]" << "\t" << "Delay (msec.) between capture frames" << std::endl;
+			std::cout << "\t-e[--t_e_f_r]" << "\t" << "Test eigen face recognizer" << std::endl;
 			exit(0);
 		}
 
@@ -60,43 +62,57 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 		exit(2);
 	}
 
-	CAPTURE_TYPE_ENUM capture_type = CAPTURE_TYPE_ENUM::not_capture;
+	APPLICATION_OPTIONS_ENUM options_value = APPLICATION_OPTIONS_ENUM::not_choisen;
 
 	try {
 		if (vm.count("c_c_l")) 
-			capture_type = CAPTURE_TYPE_ENUM::input_library;
+			options_value = APPLICATION_OPTIONS_ENUM::input_library;
 		else if (vm.count("c_c_m"))
-			capture_type = CAPTURE_TYPE_ENUM::modern_capture;
+			options_value = APPLICATION_OPTIONS_ENUM::modern_capture;
 		else if (vm.count("c_i_v")) 
-			capture_type = CAPTURE_TYPE_ENUM::video_import;
+			options_value = APPLICATION_OPTIONS_ENUM::video_import;
+		else if (vm.count("t_e_f_r"))
+			options_value = APPLICATION_OPTIONS_ENUM::eigen_test;
 
-		if (capture_type == CAPTURE_TYPE_ENUM::not_capture)
+		
+		if (options_value == APPLICATION_OPTIONS_ENUM::not_choisen)
 			throw;
 		else {
+
 			parameters_value->clear();
-			parameters_value->push_back(std::to_string(capture_type));
+
+			parameters_value->push_back(std::to_string(options_value));
+			switch (options_value)
+			{
+				case input_library:
+					parameters_value->push_back(std::to_string(vm["c_c_l"].as<int32_t>()));
+					break;
+
+				case modern_capture:
+					parameters_value->push_back(std::to_string(vm["c_c_m"].as<int32_t>()));
+					break;
+
+				case video_import:
+					parameters_value->push_back(vm["c_i_v"].as<std::string>());
+					break;
+
+				case eigen_test:
+					parameters_value->push_back(vm["t_e_f_r"].as<std::string>());
+					break;
+
+				default:
+					throw;
+			}
+
+			switch (options_value) {
+			case input_library:
+			case modern_capture:
+			case video_import:
+				if (vm.count("c_f_t"))
+					parameters_value->push_back(std::to_string(vm["c_f_t"].as<int32_t>()));
+			}
 		}
-
-		switch (capture_type)
-		{
-		case input_library:
-			parameters_value->push_back(std::to_string(vm["c_c_l"].as<int32_t>()));
-			break;
-
-		case modern_capture:
-			parameters_value->push_back(std::to_string(vm["c_c_m"].as<int32_t>()));
-			break;
-
-		case video_import:
-			parameters_value->push_back(vm["c_i_v"].as<std::string>());
-			break;
-
-		default:
-			throw;
-		}
-
-		if (vm.count("c_f_t"))
-			parameters_value->push_back(std::to_string(vm["c_f_t"].as<int32_t>()));
+		
 	}
 	catch (...) {
 		std::cout << std::endl << "Error input parameters" << std::endl;
@@ -135,12 +151,12 @@ int main(int argc, char* argv[])
 
 	// print_input_parameters(&parameters_value);
 
-	CAPTURE_TYPE_ENUM capture_type = CAPTURE_TYPE_ENUM(boost::lexical_cast<int32_t>(parameters_value.front()));
+	APPLICATION_OPTIONS_ENUM options_value = APPLICATION_OPTIONS_ENUM(boost::lexical_cast<int32_t>(parameters_value.front()));
 	int32_t snapshot_delay = 0;
-	if (parameters_value.size() == 3)
+	if (parameters_value.size() > 2)
 		snapshot_delay = boost::lexical_cast<int32_t>(parameters_value.at(2));
 
-	switch (capture_type)
+	switch (options_value)
 	{
 	case input_library: {
 		CamCaptureLib *cam_capture_lib = new CamCaptureLib(boost::lexical_cast<int32_t>(parameters_value.at(1)),
@@ -166,6 +182,10 @@ int main(int argc, char* argv[])
 			video_capture->run_capture();
 			delete video_capture;
 		}
+	} break;
+
+	case eigen_test: {
+
 	} break;
 
 	default:

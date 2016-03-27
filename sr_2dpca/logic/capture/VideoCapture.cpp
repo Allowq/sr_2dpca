@@ -8,9 +8,14 @@ VideoCapture::VideoCapture(std::string _path_to_video,
 	btv_sr = new NS_SuperResolution::SuperResolution();
 }
 
-void VideoCapture::run_capture() {
+int32_t VideoCapture::run_capture() {
 	// уникальный номер нажатой клавиши
 	char ch = 0;
+	// таймер сн€ти€ скриншота
+	boost::timer snapshot_timer;
+	snapshot_timer.restart();
+
+	char snapshot_name[80];
 
 	// cvNamedWindow(window_name.c_str(), CV_WINDOW_AUTOSIZE);
 
@@ -19,23 +24,31 @@ void VideoCapture::run_capture() {
 		// пор€дковый номер скришота, который мы сохран€ем
 		uint32_t index = 0;
 		// требующеес€ нам количество кадров дл€ работы алгоритма
-		uint32_t image_count = 16;
+		uint32_t image_count = 10;
 		// количество итераций алгоритма sr_btv
 		uint32_t number_of_iteration = 60; // 180
 		// величина шага в методе наискорейшего спуска
-		float beta = 0.1f; // 1.3f
+		float beta = 1.3f; // 1.3f
 		// коэффициент регул€ризации, увеличение ведЄт к сглаживанию сотрых краЄв (прежде чем удал€етс€ шум)
-		float lambda = 0.01f; // 0.03
+		float lambda = 0.03f; // 0.03f
 		// скал€рный вес, примен€етс€ дл€ добавлени€ пространственно затухающего эффекта суммировани€ слагаемых регул€ризации
-		float alpha = 0.7f;
+		float alpha = 0.7f; // 0.7f
 
-		std::vector<cv::Mat> degrade_images; degrade_images.resize(16);
-		std::vector<cv::SparseMat> DHF; DHF.resize(16);
+		uint32_t test_step = 0;
+
+		std::vector<cv::Mat> degrade_images; degrade_images.resize(image_count);
+		std::vector<cv::SparseMat> DHF; DHF.resize(image_count);
 		cv::Mat dest = cv::Mat(cvSize(640, 480), CV_8UC3);
+		cv::Mat ideal = cv::Mat(cvSize(640, 480), CV_8UC3);
 
 		while (true) {
 			frame = cvQueryFrame(capture_frame);
 			if (!frame) {
+				stop_capture();
+				break;
+			}
+
+			if (test_step > 5) {
 				stop_capture();
 				break;
 			}
@@ -52,30 +65,36 @@ void VideoCapture::run_capture() {
 													 lambda,
 													 alpha,
 													 cv::Size(7, 7),
-													 NS_SuperResolution::SR_DATA_L1);
-
-				lambda += 0.05f;
-				if (lambda == 1.0f) {
-					stop_capture();
-					break;
-				}
-				else {
-					cvSetCaptureProperty(capture_frame, CV_CAP_PROP_POS_AVI_RATIO, 0);
-				}
+													 NS_SuperResolution::SR_DATA_L1,
+													 ideal,
+													 test_step);
+				test_step++;
+				cvSetCaptureProperty(capture_frame, CV_CAP_PROP_POS_AVI_RATIO, 0);
+				snapshot_timer.restart();
 			}
 			else {
-				degrade_images[index] = cv::cvarrToMat(frame);
-				DHF[index] = degrade_images[index];
-				index++;
+				if (snapshot_timer.elapsed() > (snapshot_delay / 1000.0)) {
+					snapshot_timer.restart();
+
+					if (index == 0)
+						ideal = cv::cvarrToMat(frame);
+
+					degrade_images[index] = cv::cvarrToMat(frame);
+					DHF[index] = cv::cvarrToMat(frame);
+
+					sprintf(snapshot_name, ".//snapshots//Image%d.jpg", index);
+					cvSaveImage(snapshot_name, frame);
+					index++;
+				}
 			}
 
 			// cvShowImage(window_name.c_str(), frame);
-			// ch = cvWaitKey(33);
+		    ch = cvWaitKey(33);
 			// ≈сли была нажата клавиша ESC, то завершаем испонление
-			// if (ch == 27) {
-			// 	stop_capture();
-			//	break;
-			// }
+			if (ch == 27) {
+			 	stop_capture();
+				break;
+			 }
 		}
 	}
 	catch (boost::thread_interrupted) {

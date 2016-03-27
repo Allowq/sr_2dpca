@@ -3,8 +3,14 @@
 
 #pragma once
 
-enum CAPTURE_TYPE_ENUM {
-	not_capture = 0, input_library, modern_capture, video_import
+enum APPLICATION_OPTIONS_ENUM {
+	not_choisen = 0, 
+	/* CAPTURE_TYPE_ENUM */
+	input_library, 
+	modern_capture, 
+	video_import,
+	/* FACE_RECOGNIZE_ENUM */
+	eigen_test
 };
 
 #endif

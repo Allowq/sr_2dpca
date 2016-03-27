@@ -48,10 +48,12 @@ void CamCaptureLib::run_capture() {
 		std::vector<cv::Mat> degrade_images; degrade_images.resize(16);
 		std::vector<cv::SparseMat> DHF; DHF.resize(16);
 		cv::Mat dest = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
-
-		uint32_t image_count = 16;
+		cv::Mat ideal = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
+		
+		uint32_t test_step = 0;
+		uint32_t image_count = 10;
 		uint32_t number_of_iteration = 60; // 180
-		float beta = 0.1f; // 1.3f
+		float beta = 1.3f; // 1.3f
 		// коэффициент регул€ризации, увеличение ведЄт к сглаживанию сотрых краЄв (прежде чем удал€етс€ шум)
 		float lambda = 0.03f;
 		// скал€рный вес, примен€етс€ дл€ добавлени€ пространственно затухающего эффекта суммировани€ слагаемых регул€ризации
@@ -65,15 +67,6 @@ void CamCaptureLib::run_capture() {
 				// четвЄртый - флаг, определ€ющий поворачивать картинку или нет
 				video_input.getPixels(camera_index, (unsigned char *)frame->imageData, false, true); // получение пикселей в BGR
 
-				/*
-				if (snapshot_timer.elapsed() > (snapshot_delay / 1000.0)) {
-					snapshot_timer.restart();
-					sprintf(snapshot_name, ".//snapshots//Image%d.jpg", index);
-					cvSaveImage(snapshot_name, frame);
-					index++;
-				}
-				*/
-
 				if ((index > 0) && ((index % image_count) == 0))
 				{
 					index = 0;
@@ -86,18 +79,25 @@ void CamCaptureLib::run_capture() {
 														 lambda,
 														 alpha,
 														 cv::Size(7, 7), 
-														 NS_SuperResolution::SR_DATA_L1);
-
-					beta += 0.1f;
-					if (beta == 5.0f) {
-						stop_capture();
-						break;
-					}
+														 NS_SuperResolution::SR_DATA_L1, 
+														 ideal,
+														 test_step);
+					test_step++;
 				}
 				else {
-					degrade_images[index] = cv::cvarrToMat(frame);
-					DHF[index] = degrade_images[index];
-					index++;
+					if (snapshot_timer.elapsed() > (snapshot_delay / 1000.0)) {
+						snapshot_timer.restart();
+
+						if (index == 0)
+							ideal = cv::cvarrToMat(frame);
+
+						degrade_images[index] = cv::cvarrToMat(frame);
+						DHF[index] = degrade_images[index];
+
+						//sprintf(snapshot_name, ".//snapshots//Image%d.jpg", index);
+						//cvSaveImage(snapshot_name, frame);
+						index++;
+					}
 				}
 
 																					   //
