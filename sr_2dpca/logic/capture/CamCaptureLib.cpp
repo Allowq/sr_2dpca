@@ -18,7 +18,7 @@ CamCaptureLib::CamCaptureLib(int32_t _camera_index,
 	video_input.setIdealFramerate(camera_index, frame_rate);
 
 	// указываем разрешение
-	video_input.setupDevice(camera_index, height_capture, width_capture, VI_COMPOSITE);
+	video_input.setupDevice(camera_index, width_capture, height_capture, VI_COMPOSITE);
 
 	// показать окошко настроек камеры
 	if (show_camera_settings)
@@ -44,17 +44,18 @@ void CamCaptureLib::run_capture() {
 	//cvNamedWindow(window_name.c_str(), CV_WINDOW_AUTOSIZE);
 
 	try {
+		uint32_t image_count = 5;
 
-		std::vector<cv::Mat> degrade_images; degrade_images.resize(16);
-		std::vector<cv::SparseMat> DHF; DHF.resize(16);
-		cv::Mat dest = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
-		cv::Mat ideal = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
+		std::vector<cv::Mat> degrade_images; degrade_images.resize(image_count);
+		std::vector<cv::SparseMat> DHF; DHF.resize(image_count);
+
+		cv::Mat dest = cv::Mat(cvSize(video_input.getWidth(camera_index) * 4, video_input.getHeight(camera_index) * 4), CV_8UC3);
+		cv::Mat ideal = cv::Mat(cvSize(video_input.getWidth(camera_index) * 4, video_input.getHeight(camera_index) * 4), CV_8UC3);
 		
 		uint32_t test_step = 0;
-		uint32_t image_count = 10;
-		uint32_t number_of_iteration = 60; // 180
+		uint32_t number_of_iteration = 1; // 180
 		float beta = 1.3f; // 1.3f
-		// коэффициент регул€ризации, увеличение ведЄт к сглаживанию сотрых краЄв (прежде чем удал€етс€ шум)
+		// коэффициент регул€ризации, увеличение ведЄт к сглаживанию оcтрых краЄв (прежде чем удал€етс€ шум)
 		float lambda = 0.03f;
 		// скал€рный вес, примен€етс€ дл€ добавлени€ пространственно затухающего эффекта суммировани€ слагаемых регул€ризации
 		float alpha = 0.7f;

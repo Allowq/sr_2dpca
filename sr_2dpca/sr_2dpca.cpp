@@ -11,9 +11,6 @@
 #include <signal.h>
 
 #include "defines.h"
-#include "logic\capture\CamCaptureLib.h"
-#include "logic\capture\CamCaptureModern.h"
-#include "logic\capture\VideoCapture.h"
 
 boost::mutex io_mutex;
 
@@ -28,7 +25,8 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 		("c_c_m,m", po::value<int32_t>(), "Capture videos with the camera (modern)")
 		("c_i_v,i", po::value<std::string>(), "Input video from file")
 		("c_f_t,t", po::value<int32_t>(), "Capture frames with delay (ms)")
-		("t_e_f_r,e", po::value<std::string>(), "Test eigen face recognizer");
+		("t_e_f_r,e", po::value<std::string>(), "Test eigen face recognizer")
+		("t_c_c_r,c", po::value<std::string>(), "Test cascade classifier face recognizer");
 
 	po::variables_map vm;
 
@@ -46,6 +44,7 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			std::cout << "\t-i[--c_i_v]" << "\t" << "Input video from file" << std::endl;
 			std::cout << "\t-t[--c_f_t]" << "\t" << "Delay (msec.) between capture frames" << std::endl;
 			std::cout << "\t-e[--t_e_f_r]" << "\t" << "Test eigen face recognizer" << std::endl;
+			std::cout << "\t-c[--t_c_c_r]" << "\t" << "Test cascade classifier face recognizer" << std::endl;
 			exit(0);
 		}
 
@@ -73,7 +72,8 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			options_value = APPLICATION_OPTIONS_ENUM::video_import;
 		else if (vm.count("t_e_f_r"))
 			options_value = APPLICATION_OPTIONS_ENUM::eigen_test;
-
+		else if (vm.count("t_c_c_r"))
+			options_value = APPLICATION_OPTIONS_ENUM::haar_cascade_test;
 		
 		if (options_value == APPLICATION_OPTIONS_ENUM::not_choisen)
 			throw;
@@ -98,6 +98,10 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 
 				case eigen_test:
 					parameters_value->push_back(vm["t_e_f_r"].as<std::string>());
+					break;
+
+				case haar_cascade_test:
+					parameters_value->push_back(vm["t_c_c_r"].as<std::string>());
 					break;
 
 				default:
@@ -185,7 +189,22 @@ int main(int argc, char* argv[])
 	} break;
 
 	case eigen_test: {
+		NS_EigenRecognize::EigenRecognize *eigen_test = new NS_EigenRecognize::EigenRecognize(parameters_value.at(1));
+		if (eigen_test)	{
+			eigen_test->run_test("output");
+			delete eigen_test;
+			eigen_test = NULL;
+		}
+	} break;
 
+	case haar_cascade_test: {
+		NS_CascadeClassifier::CascadeClassifier *haar_cascade = new NS_CascadeClassifier::CascadeClassifier(0);
+		if (haar_cascade) {
+			haar_cascade->set_initial_params(parameters_value.at(1));
+			haar_cascade->run_recognize_lib();
+			delete haar_cascade;
+			haar_cascade = NULL;
+		}
 	} break;
 
 	default:

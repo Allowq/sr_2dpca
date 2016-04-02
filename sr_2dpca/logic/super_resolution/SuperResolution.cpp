@@ -100,7 +100,7 @@ namespace NS_SuperResolution {
 
 			// show SR imtermediate process information. these processes does not be required at actural implimentation.
 			dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
-			std::cout << "PSNR" << get_PSNR(dest, ideal, 10) << "dB" << std::endl;
+			//std::cout << "PSNR" << get_PSNR(dest, ideal, 10) << "dB" << std::endl;
 
 			//char name[64];
 			//sprintf(name, "%03d: %.1f dB", i, get_PSNR(dest, ideal, 10));

@@ -33,10 +33,10 @@ private:
 
 public:
 	explicit CamCaptureLib(int32_t _camera_index, 
-						   int32_t _snapshot_delay = 500,
-						   int32_t frame_rate = 15, 
-						   int32_t height_capture = 640, 
-						   int32_t width_capture = 480, 
+						   int32_t _snapshot_delay = 1,
+						   int32_t frame_rate = 1, 
+						   int32_t height_capture = 120, 
+						   int32_t width_capture = 160, 
 						   bool show_camera_settings = false);
 
 	void run_capture();
