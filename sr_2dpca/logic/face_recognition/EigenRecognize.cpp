@@ -79,6 +79,7 @@ namespace NS_EigenRecognize {
 		int testLabel = labels[labels.size() - 1];
 		//images.pop_back();
 		//labels.pop_back();
+
 		// The following lines create an Eigenfaces model for
 		// face recognition and train it with the images and
 		// labels read from the given CSV file.
@@ -98,7 +99,10 @@ namespace NS_EigenRecognize {
 		//
 		//      cv::createEigenFaceRecognizer(0, 123.0);
 		//
-		cv::Ptr<cv::face::BasicFaceRecognizer> model = cv::face::createEigenFaceRecognizer();
+		
+		// cv::Ptr<cv::face::BasicFaceRecognizer> model = cv::face::createEigenFaceRecognizer();
+		cv::Ptr<cv::face::BasicFaceRecognizer> model = cv::face::createFisherFaceRecognizer();
+
 		model->train(images, labels);
 		// The following line predicts the label of a given
 		// test image:

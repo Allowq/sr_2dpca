@@ -26,7 +26,8 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 		("c_i_v,i", po::value<std::string>(), "Input video from file")
 		("c_f_t,t", po::value<int32_t>(), "Capture frames with delay (ms)")
 		("t_e_f_r,e", po::value<std::string>(), "Test eigen face recognizer")
-		("t_c_c_r,c", po::value<std::string>(), "Test cascade classifier face recognizer");
+		("t_c_c_r,c", po::value<std::string>(), "Test cascade classifier face recognizer")
+		("t_s_r_r,s", po::value<std::string>(), "Test super-resolution face recognizer");
 
 	po::variables_map vm;
 
@@ -45,6 +46,7 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			std::cout << "\t-t[--c_f_t]" << "\t" << "Delay (msec.) between capture frames" << std::endl;
 			std::cout << "\t-e[--t_e_f_r]" << "\t" << "Test eigen face recognizer" << std::endl;
 			std::cout << "\t-c[--t_c_c_r]" << "\t" << "Test cascade classifier face recognizer" << std::endl;
+			std::cout << "\t-s[--t_s_r_r]" << "\t" << "Test super-resolution face recognizer" << std::endl;
 			exit(0);
 		}
 
@@ -74,6 +76,8 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			options_value = APPLICATION_OPTIONS_ENUM::eigen_test;
 		else if (vm.count("t_c_c_r"))
 			options_value = APPLICATION_OPTIONS_ENUM::haar_cascade_test;
+		else if (vm.count("t_s_r_r"))
+			options_value = APPLICATION_OPTIONS_ENUM::sr_recognize_test;
 		
 		if (options_value == APPLICATION_OPTIONS_ENUM::not_choisen)
 			throw;
@@ -102,6 +106,10 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 
 				case haar_cascade_test:
 					parameters_value->push_back(vm["t_c_c_r"].as<std::string>());
+					break;
+
+				case sr_recognize_test:
+					parameters_value->push_back(vm["t_s_r_r"].as<std::string>());
 					break;
 
 				default:
@@ -166,7 +174,7 @@ int main(int argc, char* argv[])
 		CamCaptureLib *cam_capture_lib = new CamCaptureLib(boost::lexical_cast<int32_t>(parameters_value.at(1)),
 														   snapshot_delay);
 		if (cam_capture_lib) {
-			cam_capture_lib->run_capture();
+			cam_capture_lib->run_capture(4);
 			delete cam_capture_lib;
 		}
 	} break;
@@ -204,6 +212,16 @@ int main(int argc, char* argv[])
 			haar_cascade->run_recognize_lib();
 			delete haar_cascade;
 			haar_cascade = NULL;
+		}
+	} break;
+
+	case sr_recognize_test: {
+		SRClassifier *sr_classifier = new SRClassifier(0);
+		if (sr_classifier) {
+			sr_classifier->set_initial_params(parameters_value.at(1));
+			sr_classifier->run_capture(4);
+			delete sr_classifier;
+			sr_classifier = NULL;
 		}
 	} break;
 

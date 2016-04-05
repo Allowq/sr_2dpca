@@ -45,6 +45,17 @@ namespace NS_SuperResolution {
 										  cv::Mat ideal,
 										  uint32_t test_step = 0);
 
+		void run_filter(std::vector<cv::Mat> &degrade_images,
+						cv::Mat& dest,
+						std::vector<cv::SparseMat> &DHF,
+						const int32_t num_of_view,
+						int32_t iteration,
+						float beta,
+						float lambda,
+						float alpha,
+						cv::Size reg_window,
+						int32_t method);
+
 		virtual ~SuperResolution();
 	};
 }

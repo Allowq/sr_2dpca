@@ -19,9 +19,13 @@ namespace NS_CascadeClassifier {
 
 	class CascadeClassifier
 	{
+		// порядковый индекс камеры компьютера
 		int32_t device_id;
+		// путь к файлу описания классов csv
 		std::string csv_path;
+		// путь к файлу классификатора
 		std::string haar_path;
+		// уникальное имя окна, в котором будет отображаться захват изображения с камеры
 		std::string window_name;
 
 		// These vectors hold the images and corresponding labels.

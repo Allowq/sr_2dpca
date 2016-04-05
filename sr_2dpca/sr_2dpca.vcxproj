@@ -162,6 +162,7 @@
     <ClCompile Include="logic\capture\CamCaptureModern.cpp" />
     <ClCompile Include="logic\capture\CamCaptureLib.cpp" />
     <ClCompile Include="logic\capture\videoInput.cpp" />
+    <ClCompile Include="logic\face_recognition\SRClassifier.cpp" />
     <ClCompile Include="sr_2dpca.cpp" />
     <ClCompile Include="logic\capture\VideoCapture.cpp" />
     <ClCompile Include="logic\super_resolution\SuperResolution.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="logic\capture\videoInput.h" />
     <ClInclude Include="logic\capture\VideoCapture.h" />
     <ClInclude Include="logic\super_resolution\SuperResolution.h" />
+    <ClInclude Include="logic\face_recognition\SRClassifier.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

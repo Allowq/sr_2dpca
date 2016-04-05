@@ -66,7 +66,7 @@ namespace NS_CascadeClassifier {
 		int im_width = images[0].cols;
 		int im_height = images[0].rows;
 		// Create a FaceRecognizer and train it on the given images:
-		cv::Ptr<cv::face::FaceRecognizer> model = cv::face::createFisherFaceRecognizer();
+		cv::Ptr<cv::face::FaceRecognizer> model = cv::face::createEigenFaceRecognizer();
 		model->train(images, labels);
 		// That's it for learning the Face Recognition model. You now
 		// need to create the classifier for the task of Face Detection.

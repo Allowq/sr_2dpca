@@ -6,7 +6,8 @@ CamCaptureLib::CamCaptureLib(int32_t _camera_index,
 							 int32_t height_capture, 
 							 int32_t width_capture, 
 							 bool show_camera_settings)
-	: camera_index(0), snapshot_delay(_snapshot_delay), frame(nullptr), window_name("Capture"), degrade_filter(nullptr), btv_sr(nullptr)
+	: camera_index(0), snapshot_delay(_snapshot_delay), frame(nullptr), sr_frame(nullptr), window_name("Capture"), sr_window_name("SuperResolution"),
+	  degrade_filter(nullptr), btv_sr(nullptr)
 {
 	// получение списка доступных видеоустройств, возвращаетс§ число устройств
 	int32_t numDevices = video_input.listDevices();
@@ -24,11 +25,13 @@ CamCaptureLib::CamCaptureLib(int32_t _camera_index,
 	if (show_camera_settings)
 		video_input.showSettingsWindow(camera_index); 
 
+	sr_frame = cvCreateImage(cvSize(width_capture, height_capture), 8, 3);
+
 	degrade_filter = new NS_DegradeFilter::DegradeFilter();
 	btv_sr = new NS_SuperResolution::SuperResolution();
 }
 
-void CamCaptureLib::run_capture() {
+void CamCaptureLib::run_capture(int32_t scale) {
 	// уникальный номер нажатой клавиши
 	char ch = 0;
 	// им€ сохран€емого скриншота
@@ -49,16 +52,23 @@ void CamCaptureLib::run_capture() {
 		std::vector<cv::Mat> degrade_images; degrade_images.resize(image_count);
 		std::vector<cv::SparseMat> DHF; DHF.resize(image_count);
 
-		cv::Mat dest = cv::Mat(cvSize(video_input.getWidth(camera_index) * 4, video_input.getHeight(camera_index) * 4), CV_8UC3);
-		cv::Mat ideal = cv::Mat(cvSize(video_input.getWidth(camera_index) * 4, video_input.getHeight(camera_index) * 4), CV_8UC3);
-		
+		cv::Mat dest = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
+		cv::Mat ideal = cv::Mat(cvSize(video_input.getWidth(camera_index), video_input.getHeight(camera_index)), CV_8UC3);
+		cv::Mat temp_1 = cv::Mat(cvSize(video_input.getWidth(camera_index) / (scale / 2), video_input.getHeight(camera_index) / (scale / 2)), CV_8UC3);
+		cv::Mat temp_2 = cv::Mat(cvSize(video_input.getWidth(camera_index) / scale, video_input.getHeight(camera_index) / scale), CV_8UC3);
+
+		// пор€дковый номер тестировани€
 		uint32_t test_step = 0;
-		uint32_t number_of_iteration = 1; // 180
-		float beta = 1.3f; // 1.3f
-		// коэффициент регул€ризации, увеличение ведЄт к сглаживанию оcтрых краЄв (прежде чем удал€етс€ шум)
-		float lambda = 0.03f;
+		// количество итераций алгоритма SR над изображением
+		uint32_t number_of_iteration = 15; // 5
+		// асимптотическое значение метода наискорейшего спуска
+		float beta = 1.3f; // 0.6 = 24.1dB default = 1.3f
+		// весовой коэффициент баланса данных и сглаживани€
+		// коэффициент регул€ризации, увеличение ведЄт к сглаживанию оcтрых краЄв
+		float lambda = 0.03f; // default = 0.03f
+		// параметр пространственного распределени€ в btv
 		// скал€рный вес, примен€етс€ дл€ добавлени€ пространственно затухающего эффекта суммировани€ слагаемых регул€ризации
-		float alpha = 0.7f;
+		float alpha = 0.7f; // default = 0.7f
 
 		while (true) {
 			if (video_input.isFrameNew(camera_index)) {
@@ -71,6 +81,7 @@ void CamCaptureLib::run_capture() {
 				if ((index > 0) && ((index % image_count) == 0))
 				{
 					index = 0;
+
 					btv_sr->bilateral_total_variation_sr(degrade_images, 
 														 dest, 
 														 DHF, 
@@ -83,16 +94,26 @@ void CamCaptureLib::run_capture() {
 														 NS_SuperResolution::SR_DATA_L1, 
 														 ideal,
 														 test_step);
+
+					sr_frame = cvCloneImage(&(IplImage)dest);
+					cvShowImage("SuperResolution", sr_frame);
+
 					test_step++;
 				}
 				else {
 					if (snapshot_timer.elapsed() > (snapshot_delay / 1000.0)) {
 						snapshot_timer.restart();
 
-						if (index == 0)
+						if (index == 0) 
 							ideal = cv::cvarrToMat(frame);
 
-						degrade_images[index] = cv::cvarrToMat(frame);
+						cv::pyrDown(cv::cvarrToMat(frame), temp_1, cv::Size(temp_1.cols, temp_1.rows));
+						cv::pyrDown(temp_1, temp_2, cv::Size(temp_2.cols, temp_2.rows));
+
+						// показываем картинку, над которой будет производитс€ супер-разрешение
+						cvShowImage(window_name.c_str(), cvCloneImage(&(IplImage)temp_2));
+
+						degrade_images[index] = temp_2;
 						DHF[index] = degrade_images[index];
 
 						//sprintf(snapshot_name, ".//snapshots//Image%d.jpg", index);
@@ -101,13 +122,10 @@ void CamCaptureLib::run_capture() {
 					}
 				}
 
-																					   //
-																					   // здесь уже можно работать с картинкой
-																					   // с помощью функций OpenCV
-																					   //
-
-																					   // показываем картинку
-				// cvShowImage(window_name.c_str(), frame);
+															//
+															// здесь уже можно работать с картинкой
+															// с помощью функций OpenCV
+				
 			}
 
 			ch = cvWaitKey(33);
@@ -127,7 +145,9 @@ void CamCaptureLib::run_capture() {
 void CamCaptureLib::stop_capture() {
 	// освобождаем ресурсы
 	cvReleaseImage(&frame);
+	cvReleaseImage(&sr_frame);
 	cvDestroyWindow(window_name.c_str());
+	cvDestroyWindow(sr_window_name.c_str());
 	// останавливаем видеозахват
 	video_input.stopDevice(camera_index);
 }
@@ -135,6 +155,8 @@ void CamCaptureLib::stop_capture() {
 CamCaptureLib::~CamCaptureLib() {
 	if (frame)
 		cvReleaseImage(&frame);
+	if (sr_frame)
+		cvReleaseImage(&sr_frame);
 	if (degrade_filter)
 		delete degrade_filter;
 	if (btv_sr)
