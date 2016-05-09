@@ -7,114 +7,88 @@ namespace NS_SuperResolution {
 	SuperResolution::SuperResolution() {
 	}
 
-	void SuperResolution::bilateral_total_variation_sr(std::vector<cv::Mat> &degrade_images,
-													   cv::Mat& dest,
+	void SuperResolution::bilateral_total_variation_sr(std::vector<cv::Mat> &degrade_images,	// набор искажённых изображений на входе 
+													   cv::Mat& dest,							// контейнер для результата работы алгоритма
 													   std::vector<cv::SparseMat> &DHF,
-													   const int32_t num_of_view,
-													   int32_t iteration,
-													   float beta,
-													   float lambda,
-													   float alpha,
-													   cv::Size reg_window,
+													   const int32_t num_of_view,				// количество искажённых изображений на входе алгоритма
+													   int32_t iteration,						// количество итераций для метода наискорейшего спуска
+													   float beta,								// определяет размер шага в направлении градиента
+													   float lambda,							// весовой коэффициент для поддержания баланса
+																								// между оценкой подобия (данные)
+																								// и оценкой регуляризации (сглаживание)
+													   float alpha,								// параметр пространственного распределения в BTV
+													   cv::Size kernel,							// размер ядра для фильтра BTV
 													   int32_t method,
 													   cv::Mat ideal,
 													   uint32_t test_step)
 	{
-		//(3) create initial image by simple linear interpolation
+		// формирование результирующего изображения по 1 искажённом с помощью обычной линейной интерполяции
 		resize(degrade_images[0], dest, dest.size());
-		//std::cout << "PSNR" << get_PSNR(dest, ideal, 10) << "dB" << std::endl;
 
-		//(4)convert Mat image structure to 1D vecor structure
+		// вывод в консоль разницы в сигнале между изображением, 
+		// полученным с помощью линейной интерполяции и идеальным изображением (для тестирования)
+		// std::cout << "PSNR" << get_PSNR(dest, ideal, 10) << "dB" << std::endl;
+
+		// создаём временный контейнер для результата работы алгоритма
 		cv::Mat dest_vec;
+		// преобразование структуры dest_vec к одномерному векторному представлению
 		dest.reshape(3, dest.cols * dest.rows).convertTo(dest_vec, CV_32FC3);
 
+		// контейнеры под массив искажённых изображений для одномерного представления (в форме вектора)
 		cv::Mat *dest_vec_temp = new cv::Mat[num_of_view];
 		cv::Mat *svec = new cv::Mat[num_of_view];
 		cv::Mat *svec2 = new cv::Mat[num_of_view];
 
-		for (int32_t n = 0; n < num_of_view; n++)
-		{
-			degrade_images[n].reshape(3, degrade_images[0].cols * degrade_images[0].rows).convertTo(svec[n], CV_32FC3);
-			degrade_images[n].reshape(3, degrade_images[0].cols * degrade_images[0].rows).convertTo(svec2[n], CV_32FC3);
+		for (int32_t i = 0; i < num_of_view; i++) {
+			// заполняем контейнеры с одномерным представлением искажённых изображений
+			degrade_images[i].reshape(3, degrade_images[0].cols * degrade_images[0].rows).convertTo(svec[i], CV_32FC3);
+			degrade_images[i].reshape(3, degrade_images[0].cols * degrade_images[0].rows).convertTo(svec2[i], CV_32FC3);
 
-			dest_vec_temp[n] = dest_vec.clone();
+			// заполняем контейнер с одномерным представлением изображения, полученного с помощью линейной интерполяции
+			dest_vec_temp[i] = dest_vec.clone();
 		}
 
-		//regularization vector
+		// формируем вектор регуляризации
 		cv::Mat reg_vec = cv::Mat::zeros(dest.rows * dest.cols, 1, CV_32FC3);
 
-		//(5)steepest descent method for L1 norm minimization
-		for (int32_t i = 0; i < iteration; i++)
-		{
+		// метод наискорейшего спуска для L1 нормальной минимизации
+		for (int32_t i = 0; i < iteration; i++) {
 			std::cout << "iteration" << i << std::endl;
 			int64 t = cv::getTickCount();
-			cv::Mat diff = cv::Mat::zeros(dest_vec.size(), CV_32FC3);
-
-			//(5-1)btv
+			
+			// процедура регуляризации методом билатеральной полной вариации
 			if (lambda > 0.0) 
-				btv_regularization(dest_vec, reg_window, alpha, reg_vec, dest.size());
+				btv_regularization(dest_vec, kernel, alpha, reg_vec, dest.size());
 
 #pragma omp parallel for
 			for (int32_t n = 0; n < num_of_view; n++)
 			{
-				//degrade current estimated image
+				// ухудшение текущего предполагаемого изображения
 				mul_sparseMat32f(DHF[n], dest_vec, svec2[n]);
 
-				//compere input and degraded image
+				// сравниваем изображение на входе и ухудшеное изображение
 				cv::Mat temp(degrade_images[0].cols * degrade_images[0].rows, 1, CV_32FC3);
 				if (method == SR_DATA_L1)
-				{
 					subtract_sign(svec2[n], svec[n], temp);
-				}
 				else
-				{
 					subtract(svec2[n], svec[n], temp);
-					// temp = svec2[n]- svec[n]; //supported in OpenCV2.1
-				}
 
-				//blur the subtructed vector with transposed matrix
+				// размыть результат вычитания векторов с транспонированной матрицей
 				mul_sparseMat32f(DHF[n], temp, dest_vec_temp[n], true);
 			}
 
-			//creep ideal image, beta is parameter of the creeping speed.
-			//add transeposed difference vector. sum_float_OMP is parallelized function of following for loop
-			/*
-			for(int32_t n = 0; n < num_of_view; n++)
-			{
-				addWeighted(dest_vec, 1.0, dest_vec_temp[n], -beta, 0.0, dest_vec);
-				//dstvec -= (beta*dstvectemp[n]);//supported in OpenCV2.1
-			}
-			*/
-
 			sum_float_OMP(dest_vec_temp, dest_vec, num_of_view, beta);
 
-
-			//add smoothness term
+			// добавить член, отвечающий за гладкость
 			if (lambda > 0.0)
-			{
 				addWeighted(dest_vec, 1.0, reg_vec, -beta*lambda, 0.0, dest_vec);
 
-				//supported in OpenCV2.1
-				//dstvec -=lambda*beta*reg_vec; 
-			}
-
-			// show SR imtermediate process information. these processes does not be required at actural implimentation.
 			dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
-			//std::cout << "PSNR" << get_PSNR(dest, ideal, 10) << "dB" << std::endl;
 
-			//char name[64];
-			//sprintf(name, "%03d: %.1f dB", i, get_PSNR(dest, ideal, 10));
-			//putText(dest, name, cv::Point(15, 50), cv::FONT_HERSHEY_DUPLEX, 1.5, CV_RGB(255, 255, 255), 2);
-
-			//sprintf(name, "iteration%04d.png", i);
-
-			// imshow("SRimage", dest);
-			// cv::waitKey(30);
-			// imwrite(name, dest);
 			std::cout << "time/iteration" << (cv::getTickCount() - t)*1000.0 / cv::getTickFrequency() << "ms" << std::endl;
 		}
 
-		//re-convert  1D vecor structure to Mat image structure
+		// обратное преобразование структуры dest_vec к двумерному векторному представлению
 		dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
 
 		char sr_rezult[64];
@@ -143,6 +117,7 @@ namespace NS_SuperResolution {
 		const int kw = (kernel.width - 1) / 2;
 		const int kh = (kernel.height - 1) / 2;
 
+		// формируем весовые коэффициенты alpha для алгоритма регуляризации
 		float* weight = new float[kernel.width*kernel.height];
 		for (int m = 0, count = 0;m <= kh;m++)
 		{
@@ -153,7 +128,7 @@ namespace NS_SuperResolution {
 			}
 		}
 		
-		//a part of under term of Eq (22) lambda*\sum\sum ...
+		// правая часть выражения (22), где alpha * sum * sum ...
 #pragma omp parallel for
 		for (int j = kh;j<src.rows - kh;j++)
 		{
@@ -265,7 +240,7 @@ namespace NS_SuperResolution {
 									 float beta,
 									 float lambda,
 									 float alpha,
-									 cv::Size reg_window,
+									 cv::Size kernel,
 									 int32_t method)
 	{
 		//(3) create initial image by simple linear interpolation
@@ -298,7 +273,7 @@ namespace NS_SuperResolution {
 
 			//(5-1)btv
 			if (lambda > 0.0)
-				btv_regularization(dest_vec, reg_window, alpha, reg_vec, dest.size());
+				btv_regularization(dest_vec, kernel, alpha, reg_vec, dest.size());
 
 #pragma omp parallel for
 			for (int32_t n = 0; n < num_of_view; n++)
@@ -327,7 +302,6 @@ namespace NS_SuperResolution {
 			if (lambda > 0.0)
 				addWeighted(dest_vec, 1.0, reg_vec, -beta*lambda, 0.0, dest_vec);
 
-			// show SR imtermediate process information. these processes does not be required at actural implimentation.
 			dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
 		}
 

@@ -40,7 +40,7 @@ namespace NS_SuperResolution {
 										  float beta, 
 										  float lambda, 
 										  float alpha, 
-										  cv::Size reg_window,
+										  cv::Size kernel,
 										  int32_t method,
 										  cv::Mat ideal,
 										  uint32_t test_step = 0);
@@ -53,7 +53,7 @@ namespace NS_SuperResolution {
 						float beta,
 						float lambda,
 						float alpha,
-						cv::Size reg_window,
+						cv::Size kernel,
 						int32_t method);
 
 		virtual ~SuperResolution();

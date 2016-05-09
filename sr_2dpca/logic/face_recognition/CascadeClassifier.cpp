@@ -156,7 +156,7 @@ namespace NS_CascadeClassifier {
 		int im_width = images[0].cols;
 		int im_height = images[0].rows;
 		// Create a FaceRecognizer and train it on the given images:
-		cv::Ptr<cv::face::FaceRecognizer> model = cv::face::createFisherFaceRecognizer();
+		cv::Ptr<cv::face::FaceRecognizer> model = cv::face::createEigenFaceRecognizer();
 		model->train(images, labels);
 		// That's it for learning the Face Recognition model. You now
 		// need to create the classifier for the task of Face Detection.
@@ -207,8 +207,14 @@ namespace NS_CascadeClassifier {
 					// face you have just found:
 					cv::Mat face_resized;
 					cv::resize(face, face_resized, cv::Size(im_width, im_height), 1.0, 1.0, cv::INTER_CUBIC);
+
+					cvShowImage("Detect", &(IplImage)face_resized);
+
 					// Now perform the prediction, see how easy that is:
 					int prediction = model->predict(face_resized);
+
+					cvShowImage("Predict", &(IplImage)images[prediction * 10]);
+
 					// And finally write all we've found out to the original image!
 					// First of all draw a green rectangle around the detected face:
 					rectangle(original, face_i, CV_RGB(0, 255, 0), 1);
