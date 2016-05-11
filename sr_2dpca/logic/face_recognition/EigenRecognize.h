@@ -24,7 +24,7 @@ namespace NS_EigenRecognize {
 		std::vector<int32_t> labels;
 
 		cv::Mat EigenRecognize::norm_0_255(cv::InputArray _src);
-		void read_csv(const std::string &file_name, char separator = ';') throw (cv::Exception &);
+		void read_csv(const std::string &file_name, char separator = ';');
 
 	public:
 		explicit EigenRecognize(std::string _csv_path);

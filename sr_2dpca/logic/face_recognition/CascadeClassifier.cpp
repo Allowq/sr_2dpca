@@ -138,6 +138,8 @@ namespace NS_CascadeClassifier {
 			if (key == 27)
 				break;
 		}
+
+		return 0;
 	}
 
 	void CascadeClassifier::run_recognize_lib() {

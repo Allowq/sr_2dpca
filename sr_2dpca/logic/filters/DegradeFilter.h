@@ -27,13 +27,13 @@ namespace NS_DegradeFilter {
 		cv::Mat *image_temp;
 
 		// добавить гаусов-шум
-		void add_gauss_noise(cv::Mat *src, cv::Mat &dest, double sigma);
+		static void add_gauss_noise(cv::Mat *src, cv::Mat &dest, double sigma);
 		// добавить шум в виде всплесков
-		void add_spike_noise(cv::Mat& src, cv::Mat& dest, int32_t val);
+		static void add_spike_noise(cv::Mat& src, cv::Mat& dest, int32_t val);
 
-		cv::SparseMat create_degraded_image_and_sparseMat32F(cv::Mat& src, cv::Mat *dest, cv::Point2d move, int32_t amp);
-		cv::SparseMat create_downsampled_motionand_blur_CCDSparseMat32f(cv::Mat& src, int32_t amp, cv::Point2d move);
-		void mul_sparseMat32f(cv::SparseMat& smat, cv::Mat& src, cv::Mat& dest, bool isTranspose = false);
+		static cv::SparseMat create_degraded_image_and_sparseMat32F(cv::Mat& src, cv::Mat *dest, cv::Point2d move, int32_t amp);
+		static cv::SparseMat create_downsampled_motionand_blur_CCDSparseMat32f(cv::Mat& src, int32_t amp, cv::Point2d move);
+		static void mul_sparseMat32f(cv::SparseMat& smat, cv::Mat& src, cv::Mat& dest, bool isTranspose = false);
 		cv::Mat visualize_sparse_mat(cv::SparseMat& smat, cv::Size out_imsize);
 
 	public:
@@ -45,6 +45,10 @@ namespace NS_DegradeFilter {
 									 cv::Mat src, 
 									 std::vector<cv::SparseMat> *A, 
 									 std::vector<cv::Mat> *degrade_images);
+
+		static void down_up_scale_image(int8_t rfactor, cv::Mat &src);
+		static void DegradeFilter::down_scale_image(int8_t rfactor, cv::Mat &src);
+		static void dhf_image(int8_t rfactor, cv::Mat *src);
 
 		virtual ~DegradeFilter();
 	};

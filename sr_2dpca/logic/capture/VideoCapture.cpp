@@ -101,6 +101,8 @@ int32_t VideoCapture::run_capture() {
 		stop_capture();
 		throw boost::thread_interrupted();
 	}
+
+	return 0;
 }
 
 void VideoCapture::stop_capture() {

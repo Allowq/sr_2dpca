@@ -117,6 +117,39 @@ namespace NS_DegradeFilter {
 		return DHF;
 	}
 
+	void DegradeFilter::dhf_image(int8_t rfactor, cv::Mat *src) {
+		cv::Mat copy_img = cv::Mat::zeros(cv::Size(src->cols, src->rows), CV_8UC3);
+		cvtColor(*src, copy_img, CV_GRAY2RGB);
+
+		cv::RNG rnd;
+		cv::Mat degrade_image = cv::Mat::zeros(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
+		cv::Mat temp = cv::Mat::zeros(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
+
+		cv::Point2d move;
+		move.x = rnd.uniform(0.0, 10.0);
+		move.y = rnd.uniform(0.0, 10.0);
+
+		degrade_image.create(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
+		create_degraded_image_and_sparseMat32F(copy_img, &temp, move, rfactor);
+		//add gaussian noise 
+		add_gauss_noise(&temp, degrade_image, 500.0); // 10.0
+		//add spike noise 
+		add_spike_noise(degrade_image, degrade_image, 10000); // 500
+		cvtColor(copy_img, *src, CV_RGB2GRAY);
+	}
+
+	void DegradeFilter::down_up_scale_image(int8_t rfactor, cv::Mat &src) {
+		cv::Mat temp_img = cv::Mat::zeros(src.cols / rfactor, src.rows / rfactor, CV_8UC1);
+		resize(src, temp_img, cv::Size(src.cols / rfactor, src.rows / rfactor));
+		resize(temp_img, src, src.size());
+	}
+
+	void DegradeFilter::down_scale_image(int8_t rfactor, cv::Mat &src) {
+		cv::Mat temp_img = cv::Mat::zeros(src.cols / rfactor, src.rows / rfactor, CV_8UC1);
+		resize(src, temp_img, cv::Size(src.cols / rfactor, src.rows / rfactor));
+		temp_img.copyTo(src);
+	}
+
 	bool DegradeFilter::generate_degrade_images(int8_t image_count,
 												int8_t rfactor, 
 												cv::Mat src,

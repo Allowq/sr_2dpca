@@ -16,7 +16,9 @@ enum APPLICATION_OPTIONS_ENUM {
 	/* FACE_RECOGNIZE_ENUM */
 	eigen_test,
 	haar_cascade_test,
-	sr_recognize_test
+	sr_recognize_test,
+	pca_2d_test,
+	classifier_test
 };
 
 #include "logic\capture\CamCaptureLib.h"
@@ -24,6 +26,8 @@ enum APPLICATION_OPTIONS_ENUM {
 #include "logic\capture\VideoCapture.h"
 #include "logic\face_recognition\EigenRecognize.h"
 #include "logic\face_recognition\CascadeClassifier.h"
+#include "logic\face_recognition\OperatedClassifier.h"
 #include "logic\face_recognition\SRClassifier.h"
+#include "logic\face_recognition\PCA2d.h"
 
 #endif

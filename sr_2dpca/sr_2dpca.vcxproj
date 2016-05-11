@@ -156,6 +156,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="logic\face_recognition\OperatedClassifier.cpp" />
     <ClCompile Include="logic\face_recognition\CascadeClassifier.cpp" />
     <ClCompile Include="logic\face_recognition\EigenRecognize.cpp" />
     <ClCompile Include="logic\filters\DegradeFilter.cpp" />
@@ -163,11 +164,13 @@
     <ClCompile Include="logic\capture\CamCaptureLib.cpp" />
     <ClCompile Include="logic\capture\videoInput.cpp" />
     <ClCompile Include="logic\face_recognition\SRClassifier.cpp" />
+    <ClCompile Include="logic\face_recognition\PCA2D.cpp" />
     <ClCompile Include="sr_2dpca.cpp" />
     <ClCompile Include="logic\capture\VideoCapture.cpp" />
     <ClCompile Include="logic\super_resolution\SuperResolution.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="logic\face_recognition\OperatedClassifier.h" />
     <ClInclude Include="logic\face_recognition\CascadeClassifier.h" />
     <ClInclude Include="logic\face_recognition\EigenRecognize.h" />
     <ClInclude Include="logic\filters\DegradeFilter.h" />
@@ -178,6 +181,7 @@
     <ClInclude Include="logic\capture\VideoCapture.h" />
     <ClInclude Include="logic\super_resolution\SuperResolution.h" />
     <ClInclude Include="logic\face_recognition\SRClassifier.h" />
+    <ClInclude Include="logic\face_recognition\PCA2D.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

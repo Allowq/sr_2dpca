@@ -27,7 +27,9 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 		("c_f_t,t", po::value<int32_t>(), "Capture frames with delay (ms)")
 		("t_e_f_r,e", po::value<std::string>(), "Test eigen face recognizer")
 		("t_c_c_r,c", po::value<std::string>(), "Test cascade classifier face recognizer")
-		("t_s_r_r,s", po::value<std::string>(), "Test super-resolution face recognizer");
+		("t_s_r_r,s", po::value<std::string>(), "Test super-resolution face recognizer")
+		("t_2dpca,y", po::value<std::string>(), "Test 2d pca face recognizer")
+		("t_o_c,o", po::value<std::string>(), "Test operated classifier");
 
 	po::variables_map vm;
 
@@ -40,10 +42,10 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			std::cout << "USAGE: " << appName << " [-h] <-l ARG> <-m ARG> <-i STRING> <-t ARG>" << std::endl;
 			std::cout << "-- Option Description --" << std::endl;
 			std::cout << "\t-h[--help]" << "\t" << "Print help message" << std::endl;
-			std::cout << "\t-l[--c_c_l]" << "\t" << "Capture videos with the camera (by library)" << std::endl;
-			std::cout << "\t-m[--c_c_m]" << "\t" << "Capture videos with the camera (modern)" << std::endl;
-			std::cout << "\t-i[--c_i_v]" << "\t" << "Input video from file" << std::endl;
-			std::cout << "\t-t[--c_f_t]" << "\t" << "Delay (msec.) between capture frames" << std::endl;
+			// std::cout << "\t-l[--c_c_l]" << "\t" << "Capture videos with the camera (by library)" << std::endl;
+			// std::cout << "\t-m[--c_c_m]" << "\t" << "Capture videos with the camera (modern)" << std::endl;
+			// std::cout << "\t-i[--c_i_v]" << "\t" << "Input video from file" << std::endl;
+			// std::cout << "\t-t[--c_f_t]" << "\t" << "Delay (msec.) between capture frames" << std::endl;
 			std::cout << "\t-e[--t_e_f_r]" << "\t" << "Test eigen face recognizer" << std::endl;
 			std::cout << "\t-c[--t_c_c_r]" << "\t" << "Test cascade classifier face recognizer" << std::endl;
 			std::cout << "\t-s[--t_s_r_r]" << "\t" << "Test super-resolution face recognizer" << std::endl;
@@ -78,6 +80,10 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 			options_value = APPLICATION_OPTIONS_ENUM::haar_cascade_test;
 		else if (vm.count("t_s_r_r"))
 			options_value = APPLICATION_OPTIONS_ENUM::sr_recognize_test;
+		else if (vm.count("t_2dpca"))
+			options_value = APPLICATION_OPTIONS_ENUM::pca_2d_test;
+		else if (vm.count("t_o_c"))
+			options_value = APPLICATION_OPTIONS_ENUM::classifier_test;
 		
 		if (options_value == APPLICATION_OPTIONS_ENUM::not_choisen)
 			throw;
@@ -110,6 +116,14 @@ void parsing_parameters(int argc, char* argv[], std::vector<std::string> *parame
 
 				case sr_recognize_test:
 					parameters_value->push_back(vm["t_s_r_r"].as<std::string>());
+					break;
+
+				case pca_2d_test:
+					parameters_value->push_back(vm["t_2dpca"].as<std::string>());
+					break;
+
+				case classifier_test:
+					parameters_value->push_back(vm["t_o_c"].as<std::string>());
 					break;
 
 				default:
@@ -222,6 +236,24 @@ int main(int argc, char* argv[])
 			sr_classifier->run_capture(4);
 			delete sr_classifier;
 			sr_classifier = NULL;
+		}
+	} break;
+
+	case pca_2d_test: {
+		NS_PCA2D::PCA2D *pca_2d = new NS_PCA2D::PCA2D();
+		if (pca_2d) {
+			pca_2d->training(parameters_value.at(1));
+			delete pca_2d;
+			pca_2d = NULL;
+		}
+	} break;
+
+	case classifier_test: {
+		OperatedClassifier *classifier = new OperatedClassifier();
+		if (classifier)	{
+			classifier->run(parameters_value.at(1));
+			delete classifier;
+			classifier = NULL;
 		}
 	} break;
 

@@ -37,7 +37,7 @@ namespace NS_CascadeClassifier {
 
 		videoInput video_input;
 
-		void read_csv(char separator = ';') throw (cv::Exception &);
+		void read_csv(char separator = ';'); // throw (cv::Exception &);
 		void stop_capture();
 
 	public:

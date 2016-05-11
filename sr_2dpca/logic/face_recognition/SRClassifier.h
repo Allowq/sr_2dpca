@@ -45,7 +45,7 @@ private:
 	std::vector<int32_t> labels;
 
 	// чтение информации о классах изображений лиц
-	void read_csv(char separator = ';') throw (cv::Exception &);
+	void read_csv(char separator = ';'); // throw (cv::Exception &)
 	// процедура остановки захвата изображения с камеры
 	void stop_capture();
 
