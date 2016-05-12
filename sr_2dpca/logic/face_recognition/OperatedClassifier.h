@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <fstream>
+#include <map>
 
 class OperatedClassifier
 {
@@ -19,6 +20,7 @@ private:
 	uint32_t num_images_in_class;
 
 	std::vector<cv::Mat> images;
+	std::map<int32_t, cv::Mat> etalons;
 	std::vector<int32_t> labels;
 
 	void read_csv(const std::string &file_name, char separator = ';');
