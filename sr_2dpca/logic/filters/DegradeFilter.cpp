@@ -126,16 +126,16 @@ namespace NS_DegradeFilter {
 		cv::Mat temp = cv::Mat::zeros(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
 
 		cv::Point2d move;
-		move.x = rnd.uniform(0.0, 10.0);
-		move.y = rnd.uniform(0.0, 10.0);
+		move.x = rnd.uniform(0.0, 0.0);
+		move.y = rnd.uniform(0.0, 0.0);
 
 		degrade_image.create(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
 		create_degraded_image_and_sparseMat32F(copy_img, &temp, move, rfactor);
 		//add gaussian noise 
-		add_gauss_noise(&temp, degrade_image, 500.0); // 10.0
+		add_gauss_noise(&temp, degrade_image, 200.0); // 10.0
 		//add spike noise 
-		add_spike_noise(degrade_image, degrade_image, 10000); // 500
-		cvtColor(copy_img, *src, CV_RGB2GRAY);
+		add_spike_noise(degrade_image, degrade_image, 500); // 500
+		cv::cvtColor(degrade_image, *src, CV_RGB2GRAY);
 	}
 
 	void DegradeFilter::down_up_scale_image(int8_t rfactor, cv::Mat &src) {

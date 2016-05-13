@@ -14,6 +14,10 @@
 
 class OperatedClassifier
 {
+	enum FILTER_TYPE_ENUM {
+		none = 0, scale, dhf
+	};
+
 private:
 	uint32_t num_classes;
 	uint32_t num_etalons_in_class;
@@ -24,9 +28,7 @@ private:
 	std::vector<int32_t> labels;
 
 	void read_csv(const std::string &file_name, char separator = ';');
-	int32_t run_dhf(cv::Ptr<cv::face::BasicFaceRecognizer> &model) const;
-	int32_t run_easy(cv::Ptr<cv::face::BasicFaceRecognizer> &model) const;
-	int32_t OperatedClassifier::run_scale(cv::Ptr<cv::face::BasicFaceRecognizer> &model) const;
+	int32_t OperatedClassifier::apply_filter(cv::Ptr<cv::face::BasicFaceRecognizer> &model, FILTER_TYPE_ENUM value) const;
 
 public:
 	explicit OperatedClassifier();
