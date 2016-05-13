@@ -7,6 +7,7 @@
 #include <opencv2\face\facerec.hpp>
 
 #include "..\filters\DegradeFilter.h"
+#include "..\super_resolution\SuperResolution.h"
 
 #include <stdint.h>
 #include <fstream>
@@ -28,7 +29,8 @@ private:
 	std::vector<int32_t> labels;
 
 	void read_csv(const std::string &file_name, char separator = ';');
-	int32_t OperatedClassifier::apply_filter(cv::Ptr<cv::face::BasicFaceRecognizer> &model, FILTER_TYPE_ENUM value) const;
+	int32_t apply_filter(cv::Ptr<cv::face::BasicFaceRecognizer> &model, FILTER_TYPE_ENUM value) const;
+	int32_t apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> &model, NS_SuperResolution::SuperResolution *sr, FILTER_TYPE_ENUM value) const;
 
 public:
 	explicit OperatedClassifier();

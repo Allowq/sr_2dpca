@@ -267,7 +267,7 @@ namespace NS_SuperResolution {
 		//(5)steepest descent method for L1 norm minimization
 		for (int32_t i = 0; i < iteration; i++)
 		{
-			std::cout << "iteration" << i << std::endl;
+			// std::cout << "iteration" << i << std::endl;
 			int64 t = cv::getTickCount();
 			cv::Mat diff = cv::Mat::zeros(dest_vec.size(), CV_32FC3);
 

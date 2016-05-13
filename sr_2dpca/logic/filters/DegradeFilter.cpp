@@ -150,6 +150,30 @@ namespace NS_DegradeFilter {
 		temp_img.copyTo(src);
 	}
 
+	void DegradeFilter::down_scale_image(int8_t rfactor, cv::Mat &src, std::vector<cv::Mat> &degrade_images, std::vector<cv::SparseMat> &DHF) {
+		cv::RNG rnd;
+		cv::Point2d move[10];
+		cv::Mat imtemp(src.rows / rfactor, src.cols / rfactor, CV_8UC3);
+
+		for (size_t i = 0; i < degrade_images.size(); i++)
+		{
+			if (i == 0)
+			{
+				move[i].x = 0;
+				move[i].y = 0;
+			}
+			else {
+				move[i].x = rnd.uniform(0.0, (double)rfactor);
+				move[i].y = rnd.uniform(0.0, (double)rfactor);
+			}
+			
+			degrade_images[i].create(src.rows / rfactor, src.cols / rfactor, CV_8UC3);
+
+			DHF[i] = create_degraded_image_and_sparseMat32F(src, &imtemp, move[i], rfactor);
+			merge_channels(&imtemp, degrade_images[i]);
+		}
+	}
+
 	bool DegradeFilter::generate_degrade_images(int8_t image_count,
 												int8_t rfactor, 
 												cv::Mat src,
@@ -198,6 +222,18 @@ namespace NS_DegradeFilter {
 		}
 
 		return true;
+	}
+
+	void DegradeFilter::merge_channels(cv::Mat *src, cv::Mat &dest) {
+		cv::Mat src_f;
+		std::vector<cv::Mat> images;
+		split(*src, images);
+		for (int c = 0;c<src->channels();c++)
+		{
+			images[c].convertTo(src_f, CV_32FC1);
+			src_f.convertTo(images[c], CV_8UC1);
+		}
+		merge(images, dest);
 	}
 
 	void DegradeFilter::mul_sparseMat32f(cv::SparseMat& smat, cv::Mat& src, cv::Mat& dest, bool isTranspose)
