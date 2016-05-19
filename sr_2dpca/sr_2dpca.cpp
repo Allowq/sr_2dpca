@@ -155,7 +155,6 @@ void print_input_parameters(std::vector<std::string> *vec_parameters) {
 		index++;
 		++it;
 	}
-	getchar();
 }
 
 void signalHandler(int signal) {

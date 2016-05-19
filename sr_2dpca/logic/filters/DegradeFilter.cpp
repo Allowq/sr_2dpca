@@ -125,9 +125,7 @@ namespace NS_DegradeFilter {
 		cv::Mat degrade_image = cv::Mat::zeros(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
 		cv::Mat temp = cv::Mat::zeros(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
 
-		cv::Point2d move;
-		move.x = rnd.uniform(0.0, 0.0);
-		move.y = rnd.uniform(0.0, 0.0);
+		cv::Point2d move(0,0);
 
 		degrade_image.create(copy_img.rows / rfactor, copy_img.cols / rfactor, CV_8UC3);
 		create_degraded_image_and_sparseMat32F(copy_img, &temp, move, rfactor);
@@ -136,6 +134,30 @@ namespace NS_DegradeFilter {
 		//add spike noise 
 		add_spike_noise(degrade_image, degrade_image, 500); // 500
 		cv::cvtColor(degrade_image, *src, CV_RGB2GRAY);
+	}
+
+	void DegradeFilter::dhf_image_multy(int8_t rfactor, cv::Mat &src, std::vector<cv::Mat> &degrade_images, std::vector<cv::SparseMat> &DHF) {
+		cv::RNG rnd;
+		cv::Point2d move[10];
+		cv::Mat imtemp(src.rows / rfactor, src.cols / rfactor, CV_8UC3);
+
+		for (size_t i = 0; i < degrade_images.size(); i++)
+		{
+			if (i == 0)
+			{
+				move[i].x = 0;
+				move[i].y = 0;
+			}
+			else {
+				move[i].x = rnd.uniform(0.0, 4.0);
+				move[i].y = rnd.uniform(0.0, 4.0);
+			}
+
+			degrade_images[i].create(src.rows / rfactor, src.cols / rfactor, CV_8UC3);
+			DHF[i] = create_degraded_image_and_sparseMat32F(src, &imtemp, move[i], rfactor);
+			add_gauss_noise(&imtemp, degrade_images[i], 200.0); // 10.0
+			add_spike_noise(degrade_images[i], degrade_images[i], 500); // 500
+		}
 	}
 
 	void DegradeFilter::down_up_scale_image(int8_t rfactor, cv::Mat &src) {
@@ -163,8 +185,8 @@ namespace NS_DegradeFilter {
 				move[i].y = 0;
 			}
 			else {
-				move[i].x = rnd.uniform(0.0, (double)rfactor);
-				move[i].y = rnd.uniform(0.0, (double)rfactor);
+				move[i].x = rnd.uniform(0.0, 4.0);
+				move[i].y = rnd.uniform(0.0, 4.0);
 			}
 			
 			degrade_images[i].create(src.rows / rfactor, src.cols / rfactor, CV_8UC3);
@@ -203,9 +225,9 @@ namespace NS_DegradeFilter {
 				}
 				else {
 					// рандомное смещение по оси x
-					move[i].x = rnd.uniform(0.0, (double)rfactor);
+					move[i].x = rnd.uniform(0.0, 4.0);
 					// рандомное смещение по оси y
-					move[i].y = rnd.uniform(0.0, (double)rfactor);
+					move[i].y = rnd.uniform(0.0, 4.0);
 				}
 
 				degrade_images->at(i).create(src.rows / rfactor, src.cols / rfactor, CV_8UC3);

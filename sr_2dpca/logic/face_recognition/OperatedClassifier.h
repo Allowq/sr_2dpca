@@ -30,7 +30,7 @@ private:
 
 	void read_csv(const std::string &file_name, char separator = ';');
 	int32_t apply_filter(cv::Ptr<cv::face::BasicFaceRecognizer> &model, FILTER_TYPE_ENUM value) const;
-	int32_t apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> &model, NS_SuperResolution::SuperResolution *sr, FILTER_TYPE_ENUM value) const;
+	void apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> &model, NS_SuperResolution::SuperResolution *sr, FILTER_TYPE_ENUM value) const;
 
 public:
 	explicit OperatedClassifier();

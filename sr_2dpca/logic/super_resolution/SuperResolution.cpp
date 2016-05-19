@@ -92,7 +92,7 @@ namespace NS_SuperResolution {
 		dest_vec.reshape(3, dest.rows).convertTo(dest, CV_8UC3);
 
 		char sr_rezult[64];
-		float psnr_value = get_PSNR(dest, ideal, 10);
+		double psnr_value = get_PSNR(dest, ideal, 10);
 		sprintf(sr_rezult, "PSNR: %.1f dB", psnr_value);
 		putText(dest, sr_rezult, cv::Point(15, 50), cv::FONT_HERSHEY_DUPLEX, 1.5, CV_RGB(255, 255, 255), 2);
 
@@ -164,7 +164,7 @@ namespace NS_SuperResolution {
 		delete[] weight;
 	}
 
-	double SuperResolution::get_PSNR(cv::Mat& src1, cv::Mat& src2, int32_t bb)
+	double SuperResolution::get_PSNR(const cv::Mat& src1, const cv::Mat& src2, int32_t bb)
 	{
 		int i, j;
 		double sse, mse, psnr;

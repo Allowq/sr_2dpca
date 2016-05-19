@@ -14,7 +14,7 @@
 
 namespace NS_SuperResolution {
 
-	enum {
+	enum NORM_VALUE {
 		SR_DATA_L1 = 0,
 		SR_DATA_L2
 	};
@@ -23,7 +23,6 @@ namespace NS_SuperResolution {
 	{
 	private:
 		void btv_regularization(cv::Mat &src_vec, cv::Size kernel, float alpha, cv::Mat &dst_vec, cv::Size size);
-		double get_PSNR(cv::Mat& src1, cv::Mat& src2, int32_t bb);
 		void mul_sparseMat32f(cv::SparseMat &smat, cv::Mat &src, cv::Mat &dest, bool is_transpose = false);
 		void subtract_sign(cv::Mat &src1, cv::Mat &src2, cv::Mat &dest);
 		void sum_float_OMP(cv::Mat src[], cv::Mat& dest, int32_t numofview, float beta);
@@ -44,6 +43,8 @@ namespace NS_SuperResolution {
 										  int32_t method,
 										  cv::Mat ideal,
 										  uint32_t test_step = 0);
+
+		static double get_PSNR(const cv::Mat& src1, const cv::Mat& src2, int32_t bb);
 
 		void run_filter(std::vector<cv::Mat> &degrade_images,
 						cv::Mat& dest,

@@ -51,6 +51,7 @@ namespace NS_DegradeFilter {
 		static void down_scale_image(int8_t rfactor, cv::Mat &src);
 		static void down_scale_image(int8_t rfactor, cv::Mat &src, std::vector<cv::Mat> &degrade_images, std::vector<cv::SparseMat> &DHF);
 		static void dhf_image(int8_t rfactor, cv::Mat *src);
+		static void dhf_image_multy(int8_t rfactor, cv::Mat &src, std::vector<cv::Mat> &degrade_images, std::vector<cv::SparseMat> &DHF);
 
 		virtual ~DegradeFilter();
 	};
