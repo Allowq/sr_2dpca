@@ -56,6 +56,7 @@ public:
 						  int32_t width_capture = 640);
 
 	void run_capture(int32_t scale);
+	void run_recognize();
 	// указать путь к csv-файлу и классификатору Хоара
 	void set_initial_params(const std::string &csv, const std::string &haar = "");
 

@@ -128,7 +128,7 @@ namespace NS_SuperResolution {
 			}
 		}
 		
-		// правая часть выражения (22), где alpha * sum * sum ...
+		// правая часть выражения (2.9), где alpha * sum * sum ...
 #pragma omp parallel for
 		for (int j = kh;j<src.rows - kh;j++)
 		{

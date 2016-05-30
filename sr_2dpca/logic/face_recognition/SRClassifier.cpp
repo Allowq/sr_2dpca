@@ -213,6 +213,166 @@ void SRClassifier::run_capture(int32_t scale) {
 	}
 }
 
+void SRClassifier::run_recognize() {
+	// уникальный номер нажатой клавиши
+	char ch = 0;
+	// порядковый номер скришота, который мы сохраняем
+	int32_t index = 0;
+
+	// создаём картинку нужного размера
+	frame = cvCreateImage(cvSize(video_input.getWidth(device_id), video_input.getHeight(device_id)), IPL_DEPTH_8U, 3);
+
+	/* Начало подготовки для захвата и супер-разрешения */
+	uint32_t image_count = 5;
+
+	std::vector<cv::Mat> degrade_images; degrade_images.resize(image_count);
+	std::vector<cv::SparseMat> DHF; DHF.resize(image_count);
+	cv::Mat original_captrure, gray_capture;
+
+	// количество итераций алгоритма SR над изображением
+	uint32_t number_of_iteration = 5; // 5
+
+	// асимптотическое значение метода наискорейшего спуска
+	float beta = 1.4f; 
+
+	// весовой коэффициент баланса данных и сглаживания
+	 // коэффициент регуляризации, увеличение ведёт к сглаживанию оcтрых краёв
+	float lambda = 0.04f; 
+
+	// параметр пространственного распределения в btv
+	// скалярный вес, применяется для добавления пространственно затухающего эффекта суммирования слагаемых регуляризации
+	float alpha = 0.7f; // default = 0.7f
+	/* Конец подготовки для захвата и супер-разрешения */
+
+	/* Начало подготовки для распознования и классификатора */
+	try {
+		read_csv();
+	}
+	catch (cv::Exception& e) {
+		std::cerr << "Error opening file \"" << csv_path << "\". Reason: " << e.msg << std::endl;
+		exit(1);
+	}
+
+	int im_width = images[0].cols;
+	int im_height = images[0].rows;
+
+	// изображение после применения фильтра супер-разрешения
+	cv::Mat dest = cv::Mat(cv::Size(im_width, im_height), CV_8UC3);
+	// оригинальное изображение
+	cv::Mat ideal = cv::Mat(cv::Size(im_width, im_height), CV_8UC3);
+
+	// Create a FaceRecognizer and train it on the given images:
+	cv::Ptr<cv::face::FaceRecognizer> model = cv::face::createEigenFaceRecognizer();
+	model->train(images, labels);
+	// That's it for learning the Face Recognition model. You now
+	// need to create the classifier for the task of Face Detection.
+	// We are going to use the haar cascade you have specified in the
+	// command line arguments:
+	//
+	cv::CascadeClassifier haar_cascade;
+	haar_cascade.load(haar_path);
+	/* Конец подготовки для распознования и классификатора */
+
+	try {
+		while (true) {
+			if (video_input.isFrameNew(device_id)) {
+				video_input.getPixels(device_id, (unsigned char *)frame->imageData, false, true);
+
+				if ((index > 0) && ((index % image_count) == 0))
+				{
+					index = 0;
+
+					btv_sr->run_filter(degrade_images,
+						dest,
+						DHF,
+						image_count,
+						number_of_iteration,
+						beta,
+						lambda,
+						alpha,
+						cv::Size(3, 3),
+						NS_SuperResolution::SR_DATA_L2);
+
+					// Clone the current frame:
+					cv::Mat original = cv::cvarrToMat(frame);
+					// Convert the current frame to grayscale:
+					cv::Mat gray, gray_dest;
+					cvtColor(original, gray, CV_BGR2GRAY);
+					cvtColor(dest, gray_dest, CV_RGB2GRAY);
+					// Find the faces in the frame:
+					std::vector< cv::Rect_<int32_t> > faces;
+					haar_cascade.detectMultiScale(gray, faces);
+
+					// At this point you have the position of the faces in
+					// faces. Now we'll get the faces, make a prediction and
+					// annotate it in the video. Cool or what?
+					for (int32_t i = 0; i < faces.size(); i++) {
+						// Process face by face:
+						cv::Rect face_i = faces[i];
+						// Crop the face from the image. So simple with OpenCV C++:
+						cv::Mat face = gray(face_i);
+
+						cv::Mat face_resized;
+						cv::resize(face, face_resized, cv::Size(im_width, im_height), 1.0, 1.0, cv::INTER_CUBIC);
+						// Now perform the prediction, see how easy that is:
+						int prediction = model->predict(gray_dest);
+						// And finally write all we've found out to the original image!
+						// First of all draw a green rectangle around the detected face:
+						rectangle(original, face_i, CV_RGB(0, 255, 0), 1);
+						// Create the text we will annotate the box with:
+						std::string box_text = cv::format("Prediction = %d", prediction);
+						// Calculate the position for annotated text (make sure we don't
+						// put illegal values in there):
+						int32_t pos_x = (std::max)(face_i.tl().x - 10, 0);
+						int32_t pos_y = (std::max)(face_i.tl().y - 10, 0);
+						// And now put it into the image:
+						putText(original, box_text, cv::Point(pos_x, pos_y), cv::FONT_HERSHEY_PLAIN, 1.0, CV_RGB(0, 255, 0), 2.0);
+					}
+
+					// Show the result:
+					sr_frame = cvCloneImage(&(IplImage)original);
+					cvShowImage("SuperResolution", sr_frame);
+					// показываем картинку, над которой будет производится супер-разрешение
+					imshow(window_name.c_str(), gray_dest);
+				}
+				else {
+					original_captrure = cv::cvarrToMat(frame);
+					std::vector< cv::Rect_<int32_t> > faces;
+					cvtColor(original_captrure, gray_capture, CV_BGR2GRAY);
+					haar_cascade.detectMultiScale(gray_capture, faces);
+
+					if (!faces.empty())
+					{
+						cv::Mat rgb_resize, face_resized, face = gray_capture(faces[0]);
+						cvtColor(face, rgb_resize, CV_GRAY2RGB);
+
+						cv::resize(rgb_resize, face_resized, cv::Size(im_width, im_height), 1.0, 1.0, cv::INTER_CUBIC);
+
+						if (index == 0) 
+							ideal = face_resized;
+
+						degrade_images[index] = face_resized;
+						DHF[index] = face_resized;
+
+						index++;
+					}
+				}
+			}
+
+			ch = cvWaitKey(33);
+			// Если была нажата клавиша ESC, то завершаем испонление
+			if (ch == 27) {
+				stop_capture();
+				break;
+			}
+		}
+	}
+	catch (boost::thread_interrupted) {
+		stop_capture();
+		throw boost::thread_interrupted();
+	}
+}
+
 void SRClassifier::set_initial_params(const std::string &csv, const std::string &haar) {
 	csv_path = csv;
 	if (haar != "")

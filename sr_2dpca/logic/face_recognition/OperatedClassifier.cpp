@@ -59,7 +59,7 @@ bool OperatedClassifier::run(std::string csv_path) {
 	NS_SuperResolution::SuperResolution *sr = new NS_SuperResolution::SuperResolution();
 
 	std::cout << "-- Training start --" << std::endl;
-	cv::Ptr<cv::face::BasicFaceRecognizer> model = cv::face::createFisherFaceRecognizer(); // cv::face::createEigenFaceRecognizer();
+	cv::Ptr<cv::face::BasicFaceRecognizer> model = cv::face::createEigenFaceRecognizer(50); // cv::face::createEigenFaceRecognizer();
 	model->train(images, labels);
 	std::cout << "-- Training complete --" << std::endl << std::endl;
 
@@ -161,7 +161,7 @@ void OperatedClassifier::apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> 
 	int32_t predict_label = -1, // предполагаемый результат распознавания 
 			magic = 0;			// количество распознанных образов
 
-	uint32_t reduce_value = 1;
+	uint32_t reduce_value = 4;
 
 	std::string result_message = "Image filter:";
 	switch (value)
@@ -183,22 +183,25 @@ void OperatedClassifier::apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> 
 
 	std::map<int32_t, cv::Mat>::const_iterator it_etalon;
 	NS_SuperResolution::NORM_VALUE norm_value = NS_SuperResolution::SR_DATA_L2;
-	float beta = 1.4f, // 3.3f
-		  lambda = 0.004f, // 0.01f
-		  alpha = 0.7f; // 1.1
+	float beta = 3.2f, // 3.3f
+		  lambda = 0.03f, // 0.01f
+		  alpha = 0.7f, // 1.1
+		  middlePSNR = 0.0f;
 
-	int32_t iteration_count = 36,
-			 kernel_zise = 4, // 3
+	int32_t iteration_count = 7,
+			 kernel_zise = 3, // 3
 			 image_index;
 
-	int64_t timer;
+	int64_t experimentTimer, sampleTimer, averageTime;
 
 	while (magic != 41)
 	{
+		middlePSNR = 0.0f;
 		image_index = 0;
 		magic = 0;
 		it_etalon = etalons.begin();
-		timer = cv::getTickCount();
+
+		experimentTimer = cv::getTickCount();
 
 		while (it_etalon != etalons.end())
 		{
@@ -214,7 +217,7 @@ void OperatedClassifier::apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> 
 			}
 
 			it_etalon->second.copyTo(lr_gray);
-			// imshow("Normal", lr_gray);
+			imshow("Normal", lr_gray);
 
 			cvtColor(lr_gray, lr_copy, CV_GRAY2RGB);
 			switch (value)
@@ -228,11 +231,14 @@ void OperatedClassifier::apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> 
 			default:
 				return;
 			}
+			imshow("Filtered", degrade_images[0]);
+
+			sampleTimer = cv::getTickCount();
 
 			sr->run_filter(degrade_images,
 							dest,
 							DHF,
-							num_etalons_in_class,
+				num_images_in_class,
 							iteration_count,
 							beta,
 							lambda,
@@ -242,28 +248,37 @@ void OperatedClassifier::apply_filter_sr(cv::Ptr<cv::face::BasicFaceRecognizer> 
 
 			cv::cvtColor(dest, lr_gray, CV_RGB2GRAY);
 
-			std::cout << "Image index = " << image_index << std::endl;
-			std::cout << "PSNR = " << sr->get_PSNR(lr_copy, dest, 10) << std::endl;
+			std::cout << "SR Time: " << (cv::getTickCount() - sampleTimer) * 1000.0 / cv::getTickFrequency() << "ms\t";
 
-			// imshow("Modern", lr_gray);
+			middlePSNR += sr->get_PSNR(lr_copy, dest, 10);
+			std::cout << " Image index = " << image_index << "\tPSNR result = " << sr->get_PSNR(lr_copy, dest, 10);
+
+			imshow("Modern", lr_gray);
 			predict_label = model->predict(lr_gray);
-			// imshow("Predict", images[predict_label * (num_images_in_class - num_etalons_in_class)]);
+			imshow("Predict", images[predict_label * (num_images_in_class - num_etalons_in_class)]);
 
 			if (predict_label == it_etalon->first) {
-				std::cout << "Recognized" << std::endl << std::endl;
+				std::cout << "\tRec" << std::endl;
 				magic++;
 			}
 			else
-				std::cout << "Unrecognized" << std::endl << std::endl;
+				std::cout << "\tUnrec" << std::endl;
 
 			image_index++;
 			++it_etalon;
-			// cv::waitKey(0);
+
+			cv::waitKey(0);
+			getchar();
 		}
 
-		std::cout << "Experiment time: " << (cv::getTickCount() - timer) * 1000.0 / cv::getTickFrequency() << "ms" << std::endl;
+		middlePSNR = middlePSNR / 41.0f;
+
+		std::cout << std::endl << "Experiment time: " << (cv::getTickCount() - experimentTimer) * 1000.0 / cv::getTickFrequency() << "ms" << std::endl;
 		result_message = cv::format("Recognized %d from %d images\nRecognition quality: %3.2f", magic, num_classes, float(magic) / num_classes);
+		result_message.append("\nAverage PSNR: " + std::to_string(middlePSNR));
 		std::cout << result_message << std::endl << std::endl << std::endl;
+		cv::waitKey(0);
+		getchar();
 	}
 }
 

@@ -155,8 +155,8 @@ namespace NS_DegradeFilter {
 
 			degrade_images[i].create(src.rows / rfactor, src.cols / rfactor, CV_8UC3);
 			DHF[i] = create_degraded_image_and_sparseMat32F(src, &imtemp, move[i], rfactor);
-			add_gauss_noise(&imtemp, degrade_images[i], 200.0); // 10.0
-			add_spike_noise(degrade_images[i], degrade_images[i], 500); // 500
+			add_gauss_noise(&imtemp, degrade_images[i], 80.0); // 10.0
+			add_spike_noise(degrade_images[i], degrade_images[i], 80); // 500
 		}
 	}
 
